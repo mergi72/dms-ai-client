@@ -51,6 +51,7 @@ def _positive_int(value: Any, location: str) -> int:
 @dataclass(frozen=True, slots=True)
 class Settings:
     assistant_name: str
+    assistant_voice: str
     ai_provider: str
     ai_model: str
     transcription_model: str
@@ -87,6 +88,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         command = (PROJECT_ROOT / command).resolve()
     return Settings(
         assistant_name=os.getenv("DMS_AI_ASSISTANT_NAME") or _text(assistant, "name", "assistant"),
+        assistant_voice=os.getenv("DMS_AI_ASSISTANT_VOICE") or _text(assistant, "voice", "assistant"),
         ai_provider=os.getenv("DMS_AI_PROVIDER") or _text(ai, "provider", "ai"),
         ai_model=os.getenv("DMS_AI_MODEL") or _text(ai, "model", "ai"),
         transcription_model=os.getenv("DMS_AI_TRANSCRIPTION_MODEL") or _text(ai, "transcriptionModel", "ai"),

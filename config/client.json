@@ -1,6 +1,7 @@
 {
   "assistant": {
-    "name": "Demi"
+    "name": "Demi",
+    "voice": "Vlasta"
   },
   "ai": {
     "provider": "openai",

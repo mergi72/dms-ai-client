@@ -6,8 +6,20 @@ VOICE_JS = r"""window.DMSVoice = (() => {
   let stream = null;
   let chunks = [];
   let speechEnabled = false;
+  let preferredVoiceName = '';
 
-  function initialize(input, microphoneButton, speakerButton, status, transcribe, submit) {
+  function selectCzechFemaleVoice() {
+    const voices = window.speechSynthesis?.getVoices() || [];
+    const czechVoices = voices.filter(voice => voice.lang?.toLowerCase().startsWith('cs'));
+    const preferred = preferredVoiceName.toLowerCase();
+    return czechVoices.find(voice => preferred && voice.name.toLowerCase().includes(preferred))
+      || czechVoices.find(voice => /vlasta|zuzana|female|woman/i.test(voice.name))
+      || czechVoices[0]
+      || null;
+  }
+
+  function initialize(input, microphoneButton, speakerButton, status, transcribe, submit, configuredVoice) {
+    preferredVoiceName = configuredVoice || '';
     microphoneButton.textContent = '\u{1F399}\u{FE0F} Nahrát a odeslat';
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       microphoneButton.disabled = true;
@@ -73,6 +85,8 @@ VOICE_JS = r"""window.DMSVoice = (() => {
       speechEnabled = !speechEnabled;
       speakerButton.classList.toggle('active', speechEnabled);
       speakerButton.textContent = speechEnabled ? '\u{1F50A} Čtení zapnuto' : '\u{1F507} Čtení vypnuto';
+      const voice = selectCzechFemaleVoice();
+      speakerButton.title = voice ? `Hlas: ${voice.name}` : 'Český hlas nebyl nalezen.';
       if (!speechEnabled) window.speechSynthesis.cancel();
     };
   }
@@ -82,6 +96,8 @@ VOICE_JS = r"""window.DMSVoice = (() => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'cs-CZ';
+    const voice = selectCzechFemaleVoice();
+    if (voice) utterance.voice = voice;
     window.speechSynthesis.speak(utterance);
   }
 

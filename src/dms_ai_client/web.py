@@ -25,7 +25,7 @@ function traces(items){if(!items?.length)return;const box=document.createElement
 async function submit(source='keyboard'){const text=input.value.trim();if(!text||send.disabled)return;history.push({role:'user',content:text});message('user',text,source);input.value='';send.disabled=true;status.textContent='AI přemýšlí a může použít MCP…';status.className='status';try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');traces(data.tool_calls);history.push({role:'assistant',content:data.text});message('assistant',data.text);DMSVoice.speak(data.text);status.textContent=`Hotovo · ${data.model}`;}catch(e){status.textContent=String(e);status.className='status error'}finally{send.disabled=false;input.focus()}}
 async function transcribe(audio){const r=await fetch('/api/transcribe',{method:'POST',headers:{'Content-Type':audio.type||'audio/webm'},body:audio});const data=await r.json();if(!r.ok)throw new Error(data.error||'Přepis hlasu selhal');return data.text;}
 send.onclick=()=>submit('keyboard');input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit('keyboard')}});
-DMSVoice.initialize(input,document.getElementById('microphone'),document.getElementById('speaker'),status,transcribe,()=>submit('voice'));
+DMSVoice.initialize(input,document.getElementById('microphone'),document.getElementById('speaker'),status,transcribe,()=>submit('voice'),__ASSISTANT_VOICE__);
 </script></main></body></html>"""
 
 
@@ -73,7 +73,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
             self.send_response(status);self.send_header("Content-Type","application/json; charset=utf-8");self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path == "/": body=HTML.encode();content_type="text/html; charset=utf-8"
+            if self.path == "/": body=HTML.replace("__ASSISTANT_VOICE__", json.dumps(settings.assistant_voice, ensure_ascii=False)).encode();content_type="text/html; charset=utf-8"
             elif self.path == "/voice.js": body=VOICE_JS.encode();content_type="text/javascript; charset=utf-8"
             else: self.send_error(404);return
             self.send_response(200);self.send_header("Content-Type",content_type);self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)

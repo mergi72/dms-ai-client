@@ -12,6 +12,7 @@ def test_chat_ui_is_present() -> None:
     assert "⌨️ Klávesnice" in HTML
     assert "🎙️ Hlas" in HTML
     assert "()=>submit('voice')" in HTML
+    assert "__ASSISTANT_VOICE__" in HTML
 
 
 def test_messages_require_final_user_message() -> None:

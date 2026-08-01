@@ -9,6 +9,13 @@ def test_voice_module_supports_input_and_output() -> None:
     assert "cs-CZ" in VOICE_JS
 
 
+def test_text_to_speech_prefers_czech_female_voice() -> None:
+    assert "selectCzechFemaleVoice" in VOICE_JS
+    assert "preferredVoiceName" in VOICE_JS
+    assert "vlasta|zuzana|female|woman" in VOICE_JS
+    assert "utterance.voice = voice" in VOICE_JS
+
+
 def test_dictation_records_until_user_stops_it() -> None:
     assert "getUserMedia" in VOICE_JS
     assert "recorder.start()" in VOICE_JS
