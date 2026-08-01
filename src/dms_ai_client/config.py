@@ -63,6 +63,9 @@ class Settings:
     mcp_timeout_seconds: int
     ui_host: str
     ui_port: int
+    max_attachment_bytes: int
+    max_archive_extracted_bytes: int
+    max_archive_files: int
 
 
 def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None) -> Settings:
@@ -100,4 +103,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         mcp_timeout_seconds=_positive_int(os.getenv("DMS_AI_MCP_TIMEOUT_SECONDS", mcp.get("timeoutSeconds")), "mcp.timeoutSeconds"),
         ui_host=_text(ui, "host", "ui"),
         ui_port=_positive_int(ui.get("port"), "ui.port"),
+        max_attachment_bytes=_positive_int(ui.get("maxAttachmentBytes"), "ui.maxAttachmentBytes"),
+        max_archive_extracted_bytes=_positive_int(ui.get("maxArchiveExtractedBytes"), "ui.maxArchiveExtractedBytes"),
+        max_archive_files=_positive_int(ui.get("maxArchiveFiles"), "ui.maxArchiveFiles"),
     )

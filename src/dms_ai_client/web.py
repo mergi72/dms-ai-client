@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
+import io
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping
+import zipfile
 
 from dms_ai_client.chat import ChatService
 from dms_ai_client.config import Settings
@@ -14,15 +18,18 @@ from dms_ai_client.voice import VOICE_JS
 HTML = r"""<!doctype html>
 <html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DMS AI Client</title><style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif}body{margin:0;background:#0d131b;color:#e6edf5}header{padding:18px 24px;background:#151e29;border-bottom:1px solid #2a394b}h1{margin:0;font-size:21px}.sub{color:#8da2b8;font-size:13px;margin-top:5px}main{max-width:1050px;margin:auto;padding:20px}.chat{height:58vh;overflow:auto;border:1px solid #2a394b;background:#080d13;padding:16px}.message{max-width:82%;margin:9px 0;padding:12px 14px;border-radius:12px;white-space:pre-wrap}.message-source{display:block;margin-top:7px;font-size:11px;color:#c9e5fa;opacity:.8;text-align:right}.user{margin-left:auto;background:#155f9b}.assistant{background:#182534}.tools{margin:8px 0 16px;border-left:3px solid #d29b35;padding-left:10px;color:#c7d3df}.tool{margin:6px 0}.tool summary{cursor:pointer;color:#f0bc5e}.tool pre{overflow:auto;background:#080d13;padding:10px;border:1px solid #273747}.voice{display:flex;gap:8px;margin-top:12px}.voice button{padding:9px 14px;background:#31465c}.voice button.active{background:#b35c16}.composer{display:flex;gap:8px;margin-top:8px}textarea{flex:1;min-height:70px;resize:vertical;background:#080d13;color:#fff;border:1px solid #34495f;padding:12px}button{background:#1670b7;color:#fff;border:0;padding:0 22px;cursor:pointer}button:disabled{opacity:.5}.status{height:24px;color:#6ee78f;padding-top:8px}.error{color:#ff7b72}
+:root{color-scheme:dark;font-family:system-ui,sans-serif}body{margin:0;background:#0d131b;color:#e6edf5}header{padding:18px 24px;background:#151e29;border-bottom:1px solid #2a394b}h1{margin:0;font-size:21px}.sub{color:#8da2b8;font-size:13px;margin-top:5px}main{max-width:1050px;margin:auto;padding:20px}.chat{height:58vh;overflow:auto;border:1px solid #2a394b;background:#080d13;padding:16px}.message{max-width:82%;margin:9px 0;padding:12px 14px;border-radius:12px;white-space:pre-wrap}.message-source{display:block;margin-top:7px;font-size:11px;color:#c9e5fa;opacity:.8;text-align:right}.user{margin-left:auto;background:#155f9b}.assistant{background:#182534}.tools{margin:8px 0 16px;border-left:3px solid #d29b35;padding-left:10px;color:#c7d3df}.tool{margin:6px 0}.tool summary{cursor:pointer;color:#f0bc5e}.tool pre{overflow:auto;background:#080d13;padding:10px;border:1px solid #273747}.voice,.attachments{display:flex;gap:8px;margin-top:12px;align-items:center}.voice button,.attachments button{padding:9px 14px;background:#31465c}.voice button.active{background:#b35c16}.attachment-name{color:#9fc7e8;font-size:13px}.composer{display:flex;gap:8px;margin-top:8px}textarea{flex:1;min-height:70px;resize:vertical;background:#080d13;color:#fff;border:1px solid #34495f;padding:12px}button{background:#1670b7;color:#fff;border:0;padding:0 22px;cursor:pointer}button:disabled{opacity:.5}.status{height:24px;color:#6ee78f;padding-top:8px}.error{color:#ff7b72}
 </style></head><body><header><h1>DMS AI Client</h1><div class="sub">OpenAI API ↔ local MCP ↔ Bridge ↔ DMS · read-only</div></header><main>
-<div id="chat" class="chat"></div><div id="status" class="status">Připraveno</div><div class="voice"><button id="microphone">🎙️ Diktovat</button><button id="speaker">🔇 Čtení vypnuto</button></div><div class="composer"><textarea id="input" placeholder="Např. Vypiš dostupná DMS připojení"></textarea><button id="send">Odeslat</button></div>
+<div id="chat" class="chat"></div><div id="status" class="status">Připraveno</div><div class="voice"><button id="microphone">🎙️ Diktovat</button><button id="speaker">🔇 Čtení vypnuto</button></div><div class="attachments"><button id="attach">📎 Přiložit soubor</button><input id="file" type="file" hidden><span id="attachmentName" class="attachment-name"></span><button id="removeAttachment" hidden>Odebrat</button></div><div class="composer"><textarea id="input" placeholder="Např. Vypiš dostupná DMS připojení"></textarea><button id="send">Odeslat</button></div>
 <script src="/voice.js"></script>
 <script>
-const chat=document.getElementById('chat'),input=document.getElementById('input'),send=document.getElementById('send'),status=document.getElementById('status');const history=[];
+const chat=document.getElementById('chat'),input=document.getElementById('input'),send=document.getElementById('send'),status=document.getElementById('status'),fileInput=document.getElementById('file'),attachmentName=document.getElementById('attachmentName'),removeAttachment=document.getElementById('removeAttachment');const history=[];let attachment=null;
 function message(role,text,source=null){const el=document.createElement('div');el.className=`message ${role}`;const body=document.createElement('span');body.textContent=text;el.append(body);if(role==='user'&&source){const meta=document.createElement('small');meta.className='message-source';meta.textContent=source==='voice'?'🎙️ Hlas':'⌨️ Klávesnice';el.append(meta)}chat.append(el);chat.scrollTop=chat.scrollHeight;}
 function traces(items){if(!items?.length)return;const box=document.createElement('div');box.className='tools';items.forEach(item=>{const d=document.createElement('details');d.className='tool';const s=document.createElement('summary');s.textContent=`MCP: ${item.tool}`;const p=document.createElement('pre');p.textContent=JSON.stringify({arguments:item.arguments,result:item.result},null,2);d.append(s,p);box.append(d)});chat.append(box)}
-async function submit(source='keyboard'){const text=input.value.trim();if(!text||send.disabled)return;history.push({role:'user',content:text});message('user',text,source);input.value='';send.disabled=true;status.textContent='AI přemýšlí a může použít MCP…';status.className='status';try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');traces(data.tool_calls);history.push({role:'assistant',content:data.text});message('assistant',data.text);DMSVoice.speak(data.text);status.textContent=`Hotovo · ${data.model}`;}catch(e){status.textContent=String(e);status.className='status error'}finally{send.disabled=false;input.focus()}}
+function clearAttachment(){attachment=null;fileInput.value='';attachmentName.textContent='';removeAttachment.hidden=true}
+document.getElementById('attach').onclick=()=>fileInput.click();removeAttachment.onclick=clearAttachment;
+fileInput.onchange=()=>{const f=fileInput.files[0];if(!f)return clearAttachment();if(f.size>__MAX_ATTACHMENT_BYTES__){status.textContent=`Soubor je větší než ${(__MAX_ATTACHMENT_BYTES__/1048576).toFixed(0)} MB.`;status.className='status error';return clearAttachment()}const reader=new FileReader();reader.onload=()=>{attachment={name:f.name,mime_type:f.type||'application/octet-stream',data_base64:String(reader.result).split(',',2)[1]};attachmentName.textContent=`${f.name} · ${(f.size/1024).toFixed(1)} kB`;removeAttachment.hidden=false};reader.readAsDataURL(f)};
+async function submit(source='keyboard'){let text=input.value.trim();if(!text&&attachment)text='Prohlédni přiložený soubor.';if(!text||send.disabled)return;const sentAttachment=attachment;history.push({role:'user',content:text});message('user',text+(sentAttachment?`\n📎 ${sentAttachment.name}`:''),source);input.value='';send.disabled=true;status.textContent='AI přemýšlí a může použít MCP…';status.className='status';try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history,attachment:sentAttachment})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');clearAttachment();traces(data.tool_calls);history.push({role:'assistant',content:data.text});message('assistant',data.text);DMSVoice.speak(data.text);status.textContent=`Hotovo · ${data.model}`;}catch(e){status.textContent=String(e);status.className='status error'}finally{send.disabled=false;input.focus()}}
 async function transcribe(audio){const r=await fetch('/api/transcribe',{method:'POST',headers:{'Content-Type':audio.type||'audio/webm'},body:audio});const data=await r.json();if(!r.ok)throw new Error(data.error||'Přepis hlasu selhal');return data.text;}
 send.onclick=()=>submit('keyboard');input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit('keyboard')}});
 DMSVoice.initialize(input,document.getElementById('microphone'),document.getElementById('speaker'),status,transcribe,()=>submit('voice'),__ASSISTANT_VOICE__);
@@ -63,6 +70,70 @@ def _messages(payload: Any) -> list[dict[str, str]]:
     return result
 
 
+_SOURCE_SUFFIXES = {
+    ".c", ".cpp", ".cs", ".css", ".go", ".h", ".html", ".java", ".js", ".json",
+    ".md", ".php", ".ps1", ".py", ".rb", ".rs", ".sh", ".sql", ".toml", ".ts",
+    ".tsx", ".txt", ".xml", ".yaml", ".yml",
+}
+_SKIP_PARTS = {".git", ".idea", ".venv", "__pycache__", "build", "dist", "node_modules", "venv"}
+_SECRET_NAMES = {".env", "id_rsa", "id_ed25519", "credentials.json", "secrets.json"}
+
+
+def _archive_text(raw: bytes, settings: Settings) -> bytes:
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile as exc:
+        raise ValueError("Invalid ZIP archive.") from exc
+    candidates = []
+    for info in archive.infolist():
+        parts = tuple(part for part in info.filename.replace("\\", "/").split("/") if part)
+        if info.is_dir() or not parts or any(part in _SKIP_PARTS or part in {".", ".."} for part in parts):
+            continue
+        name = parts[-1].lower()
+        suffix = "." + name.rsplit(".", 1)[-1] if "." in name else ""
+        if name in _SECRET_NAMES or name.endswith((".key", ".pem", ".pfx", ".p12")) or suffix not in _SOURCE_SUFFIXES:
+            continue
+        candidates.append((info, "/".join(parts)))
+    if len(candidates) > settings.max_archive_files:
+        raise ValueError(f"ZIP contains more than {settings.max_archive_files} supported source files.")
+    if sum(info.file_size for info, _name in candidates) > settings.max_archive_extracted_bytes:
+        raise ValueError("Extracted source files exceed the configured ZIP limit.")
+    lines = ["# Repository tree", *(f"- {name}" for _info, name in candidates)]
+    for info, name in candidates:
+        content = archive.read(info)
+        if b"\x00" in content:
+            continue
+        lines.extend((f"\n## File: {name}", "```", content.decode("utf-8", errors="replace"), "```"))
+    return "\n".join(lines).encode("utf-8")
+
+
+def _attachment(payload: Any, settings: Settings) -> dict[str, str] | None:
+    item = payload.get("attachment") if isinstance(payload, dict) else None
+    if item is None:
+        return None
+    if not isinstance(item, dict):
+        raise ValueError("Attachment must be an object.")
+    name, mime_type, encoded = item.get("name"), item.get("mime_type"), item.get("data_base64")
+    if not isinstance(name, str) or not name.strip() or "/" in name or "\\" in name or len(name) > 255:
+        raise ValueError("Attachment has an invalid filename.")
+    if not isinstance(mime_type, str) or not mime_type or len(mime_type) > 100:
+        raise ValueError("Attachment has an invalid MIME type.")
+    if not isinstance(encoded, str):
+        raise ValueError("Attachment data is missing.")
+    try:
+        raw = base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("Attachment is not valid Base64.") from exc
+    if not raw or len(raw) > settings.max_attachment_bytes:
+        raise ValueError("Attachment exceeds the configured size limit.")
+    if name.lower().endswith(".zip"):
+        raw = _archive_text(raw, settings)
+        name = f"{name[:-4]}-repository.txt"
+        mime_type = "text/plain"
+    data_url = f"data:{mime_type};base64,{base64.b64encode(raw).decode('ascii')}"
+    return {"name": name, "mime_type": mime_type, "data_url": data_url}
+
+
 def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
     service = ChatService(settings)
     transcription = TranscriptionService(settings)
@@ -73,7 +144,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
             self.send_response(status);self.send_header("Content-Type","application/json; charset=utf-8");self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path == "/": body=HTML.replace("__ASSISTANT_VOICE__", json.dumps(settings.assistant_voice, ensure_ascii=False)).encode();content_type="text/html; charset=utf-8"
+            if self.path == "/": body=HTML.replace("__ASSISTANT_VOICE__", json.dumps(settings.assistant_voice, ensure_ascii=False)).replace("__MAX_ATTACHMENT_BYTES__", str(settings.max_attachment_bytes)).encode();content_type="text/html; charset=utf-8"
             elif self.path == "/voice.js": body=VOICE_JS.encode();content_type="text/javascript; charset=utf-8"
             else: self.send_error(404);return
             self.send_response(200);self.send_header("Content-Type",content_type);self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
@@ -86,7 +157,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
                 else:
                     _validate_local_headers(self.headers, self.server.server_port)
                 length=int(self.headers.get("Content-Length","0"))
-                limit = 262_144 if self.path == "/api/chat" else 10_000_000
+                limit = settings.max_attachment_bytes * 4 // 3 + 524_288 if self.path == "/api/chat" else 10_000_000
                 if length<1 or length>limit: raise ValueError("Invalid request size.")
                 body = self.rfile.read(length)
                 if self.path == "/api/transcribe":
@@ -96,8 +167,10 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
                     text = asyncio.run(transcription.transcribe(body, mime_type))
                     self._json(200, {"text": text, "model": settings.transcription_model})
                 else:
-                    messages=_messages(json.loads(body))
-                    result=asyncio.run(service.chat(messages))
+                    payload = json.loads(body)
+                    messages=_messages(payload)
+                    attachment=_attachment(payload, settings)
+                    result=asyncio.run(service.chat(messages, attachment))
                     self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
             except (ValueError, json.JSONDecodeError) as exc: self._json(400,{"error":str(exc)})
             except Exception as exc: self._json(502,{"error":f"Chat request failed: {exc}"})

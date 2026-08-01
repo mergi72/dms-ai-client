@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dms_ai_client.providers.openai_provider import SYSTEM_PROMPT, _safe_tool_result
+from dms_ai_client.providers.openai_provider import SYSTEM_PROMPT, _inputs, _safe_tool_result
 
 
 def test_system_prompt_defines_demi_identity() -> None:
@@ -12,3 +12,12 @@ def test_system_prompt_defines_demi_identity() -> None:
 def test_document_content_is_removed_before_returning_to_ai() -> None:
     result = _safe_tool_result("read_document", {"text":"private","content_base64":"abc","size":3,"sha256":"hash"})
     assert result == {"size":3,"sha256":"hash","content_omitted":True}
+
+
+def test_attachment_is_added_only_to_final_user_message() -> None:
+    result = _inputs(
+        [{"role": "user", "content": "Prohlédni soubor"}],
+        {"name": "main.py", "mime_type": "text/plain", "data_url": "data:text/plain;base64,cHJpbnQoMSk="},
+    )
+    assert result[0]["content"][0] == {"type": "input_text", "text": "Prohlédni soubor"}
+    assert result[0]["content"][1]["type"] == "input_file"

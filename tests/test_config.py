@@ -28,7 +28,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
             },
             "broker": {"url": "http://127.0.0.1:8776"},
             "mcp": {"command": "server.exe", "timeoutSeconds": 30},
-            "ui": {"host": "127.0.0.1", "port": 8790},
+            "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10485760, "maxArchiveExtractedBytes": 5242880, "maxArchiveFiles": 200},
         },
     )
     user.mkdir(parents=True)
@@ -42,3 +42,4 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.transcription_model == "gpt-4o-transcribe"
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790
+    assert settings.max_attachment_bytes == 10485760
