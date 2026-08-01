@@ -14,11 +14,14 @@ from mcp.client.stdio import stdio_client
 @dataclass(frozen=True, slots=True)
 class MCPConnection:
     command: Path
+    working_directory: Path
     timeout_seconds: int
 
     def check(self) -> None:
         if not self.command.is_file():
             raise FileNotFoundError(f"MCP server executable not found: {self.command}")
+        if not self.working_directory.is_dir():
+            raise FileNotFoundError(f"MCP working directory not found: {self.working_directory}")
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator["MCPSession"]:
@@ -26,7 +29,7 @@ class MCPConnection:
         params = StdioServerParameters(
             command=str(self.command),
             args=[],
-            cwd=str(self.command.parent.parent.parent),
+            cwd=str(self.working_directory),
             env={**os.environ, "DMS_MCP_TIMEOUT_SECONDS": str(self.timeout_seconds)},
         )
         async with stdio_client(params) as streams:

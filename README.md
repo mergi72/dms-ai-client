@@ -26,6 +26,10 @@ The OpenAI API key is never stored in this repository. The client configuration
 contains only `credentialId: openai/eli`; secret resolution will be delegated
 to Credential Broker and kept in memory.
 
+The MCP executable and its working directory are configured independently in
+`config/client.json`, so the client does not depend on a Windows virtual
+environment layout.
+
 ## Development
 
 ```powershell
@@ -44,8 +48,10 @@ Run the local chat UI:
 Then open `http://127.0.0.1:8790`. The client resolves the OpenAI API key from
 Credential Broker, uses the Responses API, and exposes the five read-only DMS
 MCP tools to the configured model. Tool calls and results are visible in the
-chat. Document text/Base64 is removed from `read_document` tool output before
-it is returned to the model. The browser records microphone audio locally and
+chat. Document text/Base64 is removed from `read_document` tool output by
+default. The user may explicitly enable **Allow Demi to read DMS document
+content** for a request; only then is the size-limited document passed to the
+configured AI provider. The browser records microphone audio locally and
 the backend transcribes it in Czech with the configured OpenAI transcription
 model before automatically submitting the text. Optional text-to-speech remains
 behind an explicit speaker button. Voice remains a client concern and does not

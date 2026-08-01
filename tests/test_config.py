@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dms_ai_client.config import load_settings
+import pytest
+
+from dms_ai_client.config import _positive_int, load_settings
 
 
 def _write(path: Path, payload: dict) -> None:
@@ -27,7 +29,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
                 "reasoningEffort": "low",
             },
             "broker": {"url": "http://127.0.0.1:8776"},
-            "mcp": {"command": "server.exe", "timeoutSeconds": 30},
+            "mcp": {"command": "server.exe", "workingDirectory": ".", "timeoutSeconds": 30},
             "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10485760, "maxArchiveExtractedBytes": 5242880, "maxArchiveFiles": 200},
         },
     )
@@ -44,3 +46,14 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.ui_port == 8790
     assert settings.max_attachment_bytes == 10485760
     assert settings.max_output_tokens == 1000
+    assert settings.mcp_working_directory.is_dir()
+
+
+@pytest.mark.parametrize("value", [1.9, True, "1.9", "12x", None])
+def test_positive_int_rejects_non_integers(value: object) -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        _positive_int(value, "test.value")
+
+
+def test_positive_int_accepts_integer_string() -> None:
+    assert _positive_int(" 42 ", "test.value") == 42

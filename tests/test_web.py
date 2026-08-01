@@ -26,6 +26,11 @@ def test_chat_ui_is_present() -> None:
     assert "Kopírovat odpověď" in HTML
     assert "Ponechat pro další dotazy" in HTML
     assert "history.forEach(item=>delete item.attachment)" in HTML
+    assert "Povolit Demi číst obsah DMS dokumentů" in HTML
+    assert "allow_document_content:allowDocumentContent.checked" in HTML
+    assert "function renderMarkdown" in HTML
+    assert "document.createTextNode" in HTML
+    assert "innerHTML" not in HTML
 
 
 def test_messages_require_final_user_message() -> None:

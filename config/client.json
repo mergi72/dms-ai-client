@@ -16,6 +16,7 @@
   },
   "mcp": {
     "command": "../dms-mcp-server/.venv/Scripts/dms-mcp-server.exe",
+    "workingDirectory": "../dms-mcp-server",
     "timeoutSeconds": 30
   },
   "ui": {

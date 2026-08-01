@@ -12,7 +12,7 @@ class ChatService:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
-    async def chat(self, messages: list[dict[str, Any]]) -> ChatResult:
+    async def chat(self, messages: list[dict[str, Any]], allow_document_content: bool = False) -> ChatResult:
         with BrokerClient(self._settings.broker_url) as broker:
             secret = broker.resolve_secret(self._settings.ai_credential_id)
         provider = OpenAIProvider(
@@ -22,9 +22,13 @@ class ChatService:
             self._settings.max_output_tokens,
             self._settings.reasoning_effort,
         )
-        connection = MCPConnection(self._settings.mcp_command, self._settings.mcp_timeout_seconds)
+        connection = MCPConnection(
+            self._settings.mcp_command,
+            self._settings.mcp_working_directory,
+            self._settings.mcp_timeout_seconds,
+        )
         try:
             async with connection.session() as mcp:
-                return await provider.chat(messages, mcp)
+                return await provider.chat(messages, mcp, allow_document_content)
         finally:
             await provider.close()

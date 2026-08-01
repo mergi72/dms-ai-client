@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,12 +38,14 @@ def _text(section: dict[str, Any], key: str, location: str) -> str:
 
 
 def _positive_int(value: Any, location: str) -> int:
-    if isinstance(value, bool):
+    if isinstance(value, bool) or isinstance(value, float):
         raise ValueError(f"{location} must be a positive integer.")
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{location} must be a positive integer.") from exc
+    if isinstance(value, int):
+        parsed = value
+    elif isinstance(value, str) and re.fullmatch(r"[0-9]+", value.strip()):
+        parsed = int(value.strip())
+    else:
+        raise ValueError(f"{location} must be a positive integer.")
     if parsed <= 0:
         raise ValueError(f"{location} must be a positive integer.")
     return parsed
@@ -60,6 +63,7 @@ class Settings:
     reasoning_effort: str
     broker_url: str
     mcp_command: Path
+    mcp_working_directory: Path
     mcp_timeout_seconds: int
     ui_host: str
     ui_port: int
@@ -89,6 +93,9 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     command = Path(os.getenv("DMS_AI_MCP_COMMAND") or _text(mcp, "command", "mcp"))
     if not command.is_absolute():
         command = (PROJECT_ROOT / command).resolve()
+    working_directory = Path(os.getenv("DMS_AI_MCP_WORKING_DIRECTORY") or _text(mcp, "workingDirectory", "mcp"))
+    if not working_directory.is_absolute():
+        working_directory = (PROJECT_ROOT / working_directory).resolve()
     return Settings(
         assistant_name=os.getenv("DMS_AI_ASSISTANT_NAME") or _text(assistant, "name", "assistant"),
         assistant_voice=os.getenv("DMS_AI_ASSISTANT_VOICE") or _text(assistant, "voice", "assistant"),
@@ -100,6 +107,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         reasoning_effort=os.getenv("DMS_AI_REASONING_EFFORT") or _text(ai, "reasoningEffort", "ai"),
         broker_url=(os.getenv("DMS_BROKER_URL") or _text(broker, "url", "broker")).rstrip("/"),
         mcp_command=command,
+        mcp_working_directory=working_directory,
         mcp_timeout_seconds=_positive_int(os.getenv("DMS_AI_MCP_TIMEOUT_SECONDS", mcp.get("timeoutSeconds")), "mcp.timeoutSeconds"),
         ui_host=_text(ui, "host", "ui"),
         ui_port=_positive_int(ui.get("port"), "ui.port"),

@@ -10,7 +10,11 @@ from dms_ai_client.web import run_web
 
 def check_configuration() -> dict[str, object]:
     settings = load_settings()
-    connection = MCPConnection(settings.mcp_command, settings.mcp_timeout_seconds)
+    connection = MCPConnection(
+        settings.mcp_command,
+        settings.mcp_working_directory,
+        settings.mcp_timeout_seconds,
+    )
     connection.check()
     return {
         "ok": True,
@@ -21,6 +25,7 @@ def check_configuration() -> dict[str, object]:
         "ai_credential_id": settings.ai_credential_id,
         "broker_url": settings.broker_url,
         "mcp_command": str(settings.mcp_command),
+        "mcp_working_directory": str(settings.mcp_working_directory),
         "ui": f"http://{settings.ui_host}:{settings.ui_port}",
         "secret_loaded": False,
     }
