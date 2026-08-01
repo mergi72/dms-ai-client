@@ -52,6 +52,7 @@ def _positive_int(value: Any, location: str) -> int:
 class Settings:
     ai_provider: str
     ai_model: str
+    transcription_model: str
     ai_credential_id: str
     max_output_tokens: int
     reasoning_effort: str
@@ -85,6 +86,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     return Settings(
         ai_provider=os.getenv("DMS_AI_PROVIDER") or _text(ai, "provider", "ai"),
         ai_model=os.getenv("DMS_AI_MODEL") or _text(ai, "model", "ai"),
+        transcription_model=os.getenv("DMS_AI_TRANSCRIPTION_MODEL") or _text(ai, "transcriptionModel", "ai"),
         ai_credential_id=os.getenv("DMS_AI_CREDENTIAL_ID") or _text(ai, "credentialId", "ai"),
         max_output_tokens=_positive_int(os.getenv("DMS_AI_MAX_OUTPUT_TOKENS", ai.get("maxOutputTokens")), "ai.maxOutputTokens"),
         reasoning_effort=os.getenv("DMS_AI_REASONING_EFFORT") or _text(ai, "reasoningEffort", "ai"),

@@ -20,6 +20,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
             "ai": {
                 "provider": "openai",
                 "model": "base",
+                "transcriptionModel": "gpt-4o-transcribe",
                 "credentialId": "openai/eli",
                 "maxOutputTokens": 1000,
                 "reasoningEffort": "low",
@@ -35,5 +36,6 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     settings = load_settings(machine, user)
 
     assert settings.ai_model == "override"
+    assert settings.transcription_model == "gpt-4o-transcribe"
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790

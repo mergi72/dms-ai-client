@@ -7,6 +7,7 @@ from typing import Any, Mapping
 
 from dms_ai_client.chat import ChatService
 from dms_ai_client.config import Settings
+from dms_ai_client.transcription import TranscriptionService
 from dms_ai_client.voice import VOICE_JS
 
 
@@ -22,20 +23,25 @@ const chat=document.getElementById('chat'),input=document.getElementById('input'
 function message(role,text){const el=document.createElement('div');el.className=`message ${role}`;el.textContent=text;chat.append(el);chat.scrollTop=chat.scrollHeight;}
 function traces(items){if(!items?.length)return;const box=document.createElement('div');box.className='tools';items.forEach(item=>{const d=document.createElement('details');d.className='tool';const s=document.createElement('summary');s.textContent=`MCP: ${item.tool}`;const p=document.createElement('pre');p.textContent=JSON.stringify({arguments:item.arguments,result:item.result},null,2);d.append(s,p);box.append(d)});chat.append(box)}
 async function submit(){const text=input.value.trim();if(!text||send.disabled)return;history.push({role:'user',content:text});message('user',text);input.value='';send.disabled=true;status.textContent='AI přemýšlí a může použít MCP…';status.className='status';try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');traces(data.tool_calls);history.push({role:'assistant',content:data.text});message('assistant',data.text);DMSVoice.speak(data.text);status.textContent=`Hotovo · ${data.model}`;}catch(e){status.textContent=String(e);status.className='status error'}finally{send.disabled=false;input.focus()}}
+async function transcribe(audio){const r=await fetch('/api/transcribe',{method:'POST',headers:{'Content-Type':audio.type||'audio/webm'},body:audio});const data=await r.json();if(!r.ok)throw new Error(data.error||'Přepis hlasu selhal');return data.text;}
 send.onclick=submit;input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}});
-DMSVoice.initialize(input,document.getElementById('microphone'),document.getElementById('speaker'),status);
+DMSVoice.initialize(input,document.getElementById('microphone'),document.getElementById('speaker'),status,transcribe,submit);
 </script></main></body></html>"""
 
 
-def _validate_headers(headers: Mapping[str, str], port: int) -> None:
-    if headers.get("Content-Type", "").partition(";")[0].strip().lower() != "application/json":
-        raise ValueError("Content-Type must be application/json.")
+def _validate_local_headers(headers: Mapping[str, str], port: int) -> None:
     allowed_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
     if headers.get("Host", "").strip().lower() not in allowed_hosts:
         raise ValueError("Host is not allowed.")
     origin = headers.get("Origin")
     if origin and origin.strip().lower().rstrip("/") not in {f"http://{host}" for host in allowed_hosts}:
         raise ValueError("Origin is not allowed.")
+
+
+def _validate_headers(headers: Mapping[str, str], port: int) -> None:
+    _validate_local_headers(headers, port)
+    if headers.get("Content-Type", "").partition(";")[0].strip().lower() != "application/json":
+        raise ValueError("Content-Type must be application/json.")
 
 
 def _messages(payload: Any) -> list[dict[str, str]]:
@@ -59,6 +65,7 @@ def _messages(payload: Any) -> list[dict[str, str]]:
 
 def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
     service = ChatService(settings)
+    transcription = TranscriptionService(settings)
 
     class Handler(BaseHTTPRequestHandler):
         def _json(self, status: int, payload: dict[str, Any]) -> None:
@@ -72,14 +79,26 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
             self.send_response(200);self.send_header("Content-Type",content_type);self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
 
         def do_POST(self) -> None:  # noqa: N802
-            if self.path != "/api/chat": self.send_error(404);return
+            if self.path not in {"/api/chat", "/api/transcribe"}: self.send_error(404);return
             try:
-                _validate_headers(self.headers, self.server.server_port)
+                if self.path == "/api/chat":
+                    _validate_headers(self.headers, self.server.server_port)
+                else:
+                    _validate_local_headers(self.headers, self.server.server_port)
                 length=int(self.headers.get("Content-Length","0"))
-                if length<1 or length>262_144: raise ValueError("Invalid request size.")
-                messages=_messages(json.loads(self.rfile.read(length)))
-                result=asyncio.run(service.chat(messages))
-                self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
+                limit = 262_144 if self.path == "/api/chat" else 10_000_000
+                if length<1 or length>limit: raise ValueError("Invalid request size.")
+                body = self.rfile.read(length)
+                if self.path == "/api/transcribe":
+                    mime_type = self.headers.get("Content-Type", "").partition(";")[0].strip().lower()
+                    if mime_type not in {"audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav", "application/octet-stream"}:
+                        raise ValueError("Unsupported audio Content-Type.")
+                    text = asyncio.run(transcription.transcribe(body, mime_type))
+                    self._json(200, {"text": text, "model": settings.transcription_model})
+                else:
+                    messages=_messages(json.loads(body))
+                    result=asyncio.run(service.chat(messages))
+                    self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
             except (ValueError, json.JSONDecodeError) as exc: self._json(400,{"error":str(exc)})
             except Exception as exc: self._json(502,{"error":f"Chat request failed: {exc}"})
 

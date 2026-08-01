@@ -8,6 +8,8 @@ from dms_ai_client.web import HTML, _messages, _validate_headers
 def test_chat_ui_is_present() -> None:
     assert "DMS AI Client" in HTML
     assert "MCP:" in HTML
+    assert "/api/transcribe" in HTML
+    assert ",status,transcribe,submit)" in HTML
 
 
 def test_messages_require_final_user_message() -> None:

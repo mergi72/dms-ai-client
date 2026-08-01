@@ -3,7 +3,7 @@
 Local, modular AI client for the read-only `dms-mcp-server`.
 
 ```text
-Browser / keyboard / future voice
+Browser / keyboard / microphone
                 |
           dms-ai-client
            |          |
@@ -41,6 +41,8 @@ Then open `http://127.0.0.1:8790`. The client resolves the OpenAI API key from
 Credential Broker, uses the Responses API, and exposes the five read-only DMS
 MCP tools to the configured model. Tool calls and results are visible in the
 chat. Document text/Base64 is removed from `read_document` tool output before
-it is returned to the model. The browser voice module adds Czech dictation and
-optional text-to-speech behind explicit microphone and speaker buttons. Voice
-remains a client concern and does not change the MCP server.
+it is returned to the model. The browser records microphone audio locally and
+the backend transcribes it in Czech with the configured OpenAI transcription
+model before automatically submitting the text. Optional text-to-speech remains
+behind an explicit speaker button. Voice remains a client concern and does not
+change the MCP server.

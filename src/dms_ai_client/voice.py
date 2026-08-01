@@ -2,45 +2,77 @@ from __future__ import annotations
 
 
 VOICE_JS = r"""window.DMSVoice = (() => {
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recognition = null;
-  let listening = false;
+  let recorder = null;
+  let stream = null;
+  let chunks = [];
   let speechEnabled = false;
 
-  function initialize(input, microphoneButton, speakerButton, status) {
-    if (!Recognition) {
+  function initialize(input, microphoneButton, speakerButton, status, transcribe, submit) {
+    microphoneButton.textContent = '\u{1F399}\u{FE0F} Nahrát a odeslat';
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       microphoneButton.disabled = true;
-      microphoneButton.title = 'Rozpoznávání řeči není v tomto prohlížeči dostupné.';
+      microphoneButton.title = 'Nahrávání zvuku není v tomto prohlížeči dostupné.';
     } else {
-      recognition = new Recognition();
-      recognition.lang = 'cs-CZ';
-      recognition.interimResults = true;
-      recognition.continuous = false;
-      recognition.onstart = () => {
-        listening = true;
-        microphoneButton.classList.add('active');
-        status.textContent = 'Poslouchám…';
+      microphoneButton.onclick = async () => {
+        if (recorder?.state === 'recording') {
+          microphoneButton.disabled = true;
+          recorder.stop();
+          return;
+        }
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({audio: true});
+          const preferred = 'audio/webm;codecs=opus';
+          const options = MediaRecorder.isTypeSupported(preferred) ? {mimeType: preferred} : {};
+          recorder = new MediaRecorder(stream, options);
+          chunks = [];
+          recorder.ondataavailable = event => {
+            if (event.data.size) chunks.push(event.data);
+          };
+          recorder.onstart = () => {
+            microphoneButton.classList.add('active');
+            microphoneButton.textContent = '\u23F9\u{FE0F} Zastavit a odeslat';
+            status.textContent = 'Nahrávám hlas…';
+            status.className = 'status';
+          };
+          recorder.onerror = event => {
+            status.textContent = `Nahrávání selhalo: ${event.error?.message || 'neznámá chyba'}`;
+            status.className = 'status error';
+          };
+          recorder.onstop = async () => {
+            stream?.getTracks().forEach(track => track.stop());
+            stream = null;
+            microphoneButton.classList.remove('active');
+            microphoneButton.textContent = '\u{1F399}\u{FE0F} Nahrát a odeslat';
+            try {
+              const audio = new Blob(chunks, {type: recorder.mimeType || 'audio/webm'});
+              if (!audio.size) throw new Error('Nahrávka je prázdná.');
+              status.textContent = 'Přepisuji hlas…';
+              input.value = await transcribe(audio);
+              if (!input.value.trim()) throw new Error('V nahrávce nebyla rozpoznána řeč.');
+              await submit();
+            } catch (error) {
+              status.textContent = String(error);
+              status.className = 'status error';
+              input.focus();
+            } finally {
+              chunks = [];
+              microphoneButton.disabled = false;
+            }
+          };
+          recorder.start();
+        } catch (error) {
+          stream?.getTracks().forEach(track => track.stop());
+          stream = null;
+          status.textContent = `Mikrofon: ${error.message || error}`;
+          status.className = 'status error';
+        }
       };
-      recognition.onresult = event => {
-        input.value = Array.from(event.results).map(result => result[0].transcript).join('');
-      };
-      recognition.onerror = event => {
-        status.textContent = `Hlasový vstup: ${event.error}`;
-        status.className = 'status error';
-      };
-      recognition.onend = () => {
-        listening = false;
-        microphoneButton.classList.remove('active');
-        if (!status.classList.contains('error')) status.textContent = 'Diktování dokončeno · zkontroluj text a odešli';
-        input.focus();
-      };
-      microphoneButton.onclick = () => listening ? recognition.stop() : recognition.start();
     }
 
     speakerButton.onclick = () => {
       speechEnabled = !speechEnabled;
       speakerButton.classList.toggle('active', speechEnabled);
-      speakerButton.textContent = speechEnabled ? '🔊 Čtení zapnuto' : '🔇 Čtení vypnuto';
+      speakerButton.textContent = speechEnabled ? '\u{1F50A} Čtení zapnuto' : '\u{1F507} Čtení vypnuto';
       if (!speechEnabled) window.speechSynthesis.cancel();
     };
   }
