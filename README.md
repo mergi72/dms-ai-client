@@ -31,5 +31,16 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m dms_ai_client.main --check
 ```
 
-Version `0.2.0` establishes configuration, provider and MCP boundaries. The
-next increment will add the local chat UI and first OpenAI Responses API call.
+Run the local chat UI:
+
+```powershell
+.\.venv\Scripts\python.exe -m dms_ai_client.main
+```
+
+Then open `http://127.0.0.1:8790`. The client resolves the OpenAI API key from
+Credential Broker, uses the Responses API, and exposes the five read-only DMS
+MCP tools to the configured model. Tool calls and results are visible in the
+chat. Document text/Base64 is removed from `read_document` tool output before
+it is returned to the model. The browser voice module adds Czech dictation and
+optional text-to-speech behind explicit microphone and speaker buttons. Voice
+remains a client concern and does not change the MCP server.

@@ -5,6 +5,7 @@ import json
 
 from dms_ai_client.config import load_settings
 from dms_ai_client.mcp_connection import MCPConnection
+from dms_ai_client.web import run_web
 
 
 def check_configuration() -> dict[str, object]:
@@ -30,7 +31,7 @@ def main() -> None:
     if args.check:
         print(json.dumps(check_configuration(), ensure_ascii=False, indent=2))
         return
-    parser.error("The chat UI is not implemented yet; run with --check.")
+    run_web(load_settings())
 
 
 if __name__ == "__main__":

@@ -54,6 +54,7 @@ class Settings:
     ai_model: str
     ai_credential_id: str
     max_output_tokens: int
+    reasoning_effort: str
     broker_url: str
     mcp_command: Path
     mcp_timeout_seconds: int
@@ -86,6 +87,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         ai_model=os.getenv("DMS_AI_MODEL") or _text(ai, "model", "ai"),
         ai_credential_id=os.getenv("DMS_AI_CREDENTIAL_ID") or _text(ai, "credentialId", "ai"),
         max_output_tokens=_positive_int(os.getenv("DMS_AI_MAX_OUTPUT_TOKENS", ai.get("maxOutputTokens")), "ai.maxOutputTokens"),
+        reasoning_effort=os.getenv("DMS_AI_REASONING_EFFORT") or _text(ai, "reasoningEffort", "ai"),
         broker_url=(os.getenv("DMS_BROKER_URL") or _text(broker, "url", "broker")).rstrip("/"),
         mcp_command=command,
         mcp_timeout_seconds=_positive_int(os.getenv("DMS_AI_MCP_TIMEOUT_SECONDS", mcp.get("timeoutSeconds")), "mcp.timeoutSeconds"),

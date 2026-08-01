@@ -17,7 +17,13 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     _write(
         machine,
         {
-            "ai": {"provider": "openai", "model": "base", "credentialId": "openai/eli", "maxOutputTokens": 1000},
+            "ai": {
+                "provider": "openai",
+                "model": "base",
+                "credentialId": "openai/eli",
+                "maxOutputTokens": 1000,
+                "reasoningEffort": "low",
+            },
             "broker": {"url": "http://127.0.0.1:8776"},
             "mcp": {"command": "server.exe", "timeoutSeconds": 30},
             "ui": {"host": "127.0.0.1", "port": 8790},
