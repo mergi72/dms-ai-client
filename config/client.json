@@ -1,4 +1,7 @@
 {
+  "assistant": {
+    "name": "Demi"
+  },
   "ai": {
     "provider": "openai",
     "model": "gpt-5.6-terra",

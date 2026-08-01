@@ -14,6 +14,7 @@ def check_configuration() -> dict[str, object]:
     connection.check()
     return {
         "ok": True,
+        "assistant_name": settings.assistant_name,
         "ai_provider": settings.ai_provider,
         "ai_model": settings.ai_model,
         "ai_credential_id": settings.ai_credential_id,

@@ -16,6 +16,7 @@ class ChatService:
         secret = BrokerClient(self._settings.broker_url).resolve_secret(self._settings.ai_credential_id)
         provider = OpenAIProvider(
             secret,
+            self._settings.assistant_name,
             self._settings.ai_model,
             self._settings.max_output_tokens,
             self._settings.reasoning_effort,

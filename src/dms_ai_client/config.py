@@ -50,6 +50,7 @@ def _positive_int(value: Any, location: str) -> int:
 
 @dataclass(frozen=True, slots=True)
 class Settings:
+    assistant_name: str
     ai_provider: str
     ai_model: str
     transcription_model: str
@@ -74,16 +75,18 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         payload = _merge(payload, local)
 
     ai = payload.get("ai")
+    assistant = payload.get("assistant")
     broker = payload.get("broker")
     mcp = payload.get("mcp")
     ui = payload.get("ui")
-    if not all(isinstance(section, dict) for section in (ai, broker, mcp, ui)):
-        raise ValueError("Configuration requires ai, broker, mcp and ui JSON objects.")
+    if not all(isinstance(section, dict) for section in (assistant, ai, broker, mcp, ui)):
+        raise ValueError("Configuration requires assistant, ai, broker, mcp and ui JSON objects.")
 
     command = Path(os.getenv("DMS_AI_MCP_COMMAND") or _text(mcp, "command", "mcp"))
     if not command.is_absolute():
         command = (PROJECT_ROOT / command).resolve()
     return Settings(
+        assistant_name=os.getenv("DMS_AI_ASSISTANT_NAME") or _text(assistant, "name", "assistant"),
         ai_provider=os.getenv("DMS_AI_PROVIDER") or _text(ai, "provider", "ai"),
         ai_model=os.getenv("DMS_AI_MODEL") or _text(ai, "model", "ai"),
         transcription_model=os.getenv("DMS_AI_TRANSCRIPTION_MODEL") or _text(ai, "transcriptionModel", "ai"),

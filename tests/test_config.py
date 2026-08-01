@@ -17,6 +17,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     _write(
         machine,
         {
+            "assistant": {"name": "Demi"},
             "ai": {
                 "provider": "openai",
                 "model": "base",
@@ -36,6 +37,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     settings = load_settings(machine, user)
 
     assert settings.ai_model == "override"
+    assert settings.assistant_name == "Demi"
     assert settings.transcription_model == "gpt-4o-transcribe"
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790

@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from dms_ai_client.providers.openai_provider import _safe_tool_result
+from dms_ai_client.providers.openai_provider import SYSTEM_PROMPT, _safe_tool_result
+
+
+def test_system_prompt_defines_demi_identity() -> None:
+    prompt = SYSTEM_PROMPT.format(assistant_name="Demi")
+    assert "Your name is Demi" in prompt
+    assert "your name is Demi" in prompt
 
 
 def test_document_content_is_removed_before_returning_to_ai() -> None:

@@ -12,7 +12,8 @@ import truststore
 from dms_ai_client.mcp_connection import MCPSession
 
 
-SYSTEM_PROMPT = """You are a read-only assistant for company DMS repositories.
+SYSTEM_PROMPT = """Your name is {assistant_name}. You are a read-only AI assistant for company DMS repositories.
+When asked your name or identity, say that your name is {assistant_name}.
 Use the provided MCP tools whenever the answer depends on DMS data.
 Never claim that a document, path, or connection exists without checking it.
 Do not request, reveal, or discuss credentials. You cannot modify DMS data.
@@ -40,12 +41,14 @@ class OpenAIProvider:
     def __init__(
         self,
         api_key: str,
+        assistant_name: str,
         model: str,
         max_output_tokens: int,
         reasoning_effort: str,
     ) -> None:
         ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         self._client = AsyncOpenAI(api_key=api_key, http_client=httpx.AsyncClient(verify=ssl_context))
+        self._assistant_name = assistant_name
         self._model = model
         self._max_output_tokens = max_output_tokens
         self._reasoning_effort = reasoning_effort
@@ -62,7 +65,7 @@ class OpenAIProvider:
         for _iteration in range(8):
             response = await self._client.responses.create(
                 model=self._model,
-                instructions=SYSTEM_PROMPT,
+                instructions=SYSTEM_PROMPT.format(assistant_name=self._assistant_name),
                 input=inputs,
                 tools=tools,
                 max_output_tokens=self._max_output_tokens,
