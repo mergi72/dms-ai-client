@@ -15,7 +15,8 @@ class TranscriptionService:
         self._settings = settings
 
     async def transcribe(self, audio: bytes, mime_type: str) -> str:
-        secret = BrokerClient(self._settings.broker_url).resolve_secret(self._settings.ai_credential_id)
+        with BrokerClient(self._settings.broker_url) as broker:
+            secret = broker.resolve_secret(self._settings.ai_credential_id)
         ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         async with httpx.AsyncClient(verify=ssl_context) as http_client:
             client = AsyncOpenAI(api_key=secret, http_client=http_client)

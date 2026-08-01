@@ -24,6 +24,8 @@ def test_chat_ui_is_present() -> None:
     assert "if(sentAttachment)clearAttachment()" in HTML
     assert "navigator.clipboard.writeText(text)" in HTML
     assert "Kopírovat odpověď" in HTML
+    assert "Ponechat pro další dotazy" in HTML
+    assert "history.forEach(item=>delete item.attachment)" in HTML
 
 
 def test_messages_require_final_user_message() -> None:

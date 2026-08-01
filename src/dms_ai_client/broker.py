@@ -34,3 +34,12 @@ class BrokerClient:
             if isinstance(value, str) and value:
                 return value
         raise BrokerError("Credential Broker returned no usable secret.")
+
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> BrokerClient:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close()

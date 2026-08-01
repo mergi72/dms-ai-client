@@ -74,6 +74,9 @@ class OpenAIProvider:
         self._max_output_tokens = max_output_tokens
         self._reasoning_effort = reasoning_effort
 
+    async def close(self) -> None:
+        await self._client.close()
+
     async def chat(self, messages: list[dict[str, Any]], mcp: MCPSession) -> ChatResult:
         tools = await mcp.openai_tools()
         inputs = _inputs(messages)

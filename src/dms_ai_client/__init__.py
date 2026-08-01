@@ -1,3 +1,3 @@
 """Local AI client for DMS MCP."""
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
