@@ -43,3 +43,4 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790
     assert settings.max_attachment_bytes == 10485760
+    assert settings.max_output_tokens == 1000

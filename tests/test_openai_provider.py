@@ -7,6 +7,7 @@ def test_system_prompt_defines_demi_identity() -> None:
     prompt = SYSTEM_PROMPT.format(assistant_name="Demi")
     assert "Your name is Demi" in prompt
     assert "your name is Demi" in prompt
+    assert "local chat attachment, not a DMS item" in prompt
 
 
 def test_document_content_is_removed_before_returning_to_ai() -> None:
@@ -16,8 +17,7 @@ def test_document_content_is_removed_before_returning_to_ai() -> None:
 
 def test_attachment_is_added_only_to_final_user_message() -> None:
     result = _inputs(
-        [{"role": "user", "content": "Prohlédni soubor"}],
-        {"name": "main.py", "mime_type": "text/plain", "data_url": "data:text/plain;base64,cHJpbnQoMSk="},
+        [{"role": "user", "content": "Prohlédni soubor", "attachment": {"name": "main.py", "mime_type": "text/plain", "data_url": "data:text/plain;base64,cHJpbnQoMSk="}}],
     )
     assert result[0]["content"][0] == {"type": "input_text", "text": "Prohlédni soubor"}
     assert result[0]["content"][1]["type"] == "input_file"

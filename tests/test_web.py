@@ -20,6 +20,10 @@ def test_chat_ui_is_present() -> None:
     assert "()=>submit('voice')" in HTML
     assert "__ASSISTANT_VOICE__" in HTML
     assert "📎 Přiložit soubor" in HTML
+    assert "history.push({role:'user',content:text,attachment:sentAttachment})" in HTML
+    assert "if(sentAttachment)clearAttachment()" in HTML
+    assert "navigator.clipboard.writeText(text)" in HTML
+    assert "Kopírovat odpověď" in HTML
 
 
 def test_messages_require_final_user_message() -> None:
