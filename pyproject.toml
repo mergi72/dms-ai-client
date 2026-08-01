@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dms-ai-client"
+version = "0.2.0"
+description = "Local AI client for the read-only DMS MCP server."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "dms-ai-client team" }]
+dependencies = [
+  "httpx>=0.28.1",
+  "mcp>=1.27,<2",
+  "openai>=2,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.0"]
+
+[project.scripts]
+dms-ai-client = "dms_ai_client.main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dms_ai_client"]

@@ -1,0 +1,19 @@
+{
+  "ai": {
+    "provider": "openai",
+    "model": "gpt-5.6-terra",
+    "credentialId": "openai/eli",
+    "maxOutputTokens": 2000
+  },
+  "broker": {
+    "url": "http://127.0.0.1:8776"
+  },
+  "mcp": {
+    "command": "../dms-mcp-server/.venv/Scripts/dms-mcp-server.exe",
+    "timeoutSeconds": 30
+  },
+  "ui": {
+    "host": "127.0.0.1",
+    "port": 8790
+  }
+}
