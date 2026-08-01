@@ -1,5 +1,9 @@
 # dms-ai-client
 
+[![CI](https://github.com/mergi72/dms-ai-client/actions/workflows/ci.yml/badge.svg)](https://github.com/mergi72/dms-ai-client/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-%3E%3D3.11-blue)](https://www.python.org/)
+[![Release](https://img.shields.io/github/v/release/mergi72/dms-ai-client?label=Release&color=blueviolet)](https://github.com/mergi72/dms-ai-client/releases/latest)
+
 Local, modular AI client for the read-only `dms-mcp-server`.
 
 ```text
