@@ -23,9 +23,11 @@ def test_dictation_records_until_user_stops_it() -> None:
     assert "track.stop()" in VOICE_JS
 
 
-def test_stopping_dictation_submits_non_empty_text() -> None:
-    assert "Nahrát a odeslat" in VOICE_JS
+def test_stopping_dictation_prepares_text_without_submitting() -> None:
+    assert "Nadiktovat" in VOICE_JS
     assert "input.value = await transcribe(audio)" in VOICE_JS
-    assert "await submit()" in VOICE_JS
+    assert "await submit()" not in VOICE_JS
+    assert "input.dataset.source = 'voice'" in VOICE_JS
+    assert "Přepis je připravený ke kontrole a odeslání." in VOICE_JS
     assert "if (!input.value.trim())" in VOICE_JS
     assert "status.textContent = 'Připraveno'" in VOICE_JS

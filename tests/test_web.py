@@ -17,7 +17,11 @@ def test_chat_ui_is_present() -> None:
     assert "/api/transcribe" in HTML
     assert "⌨️ Klávesnice" in HTML
     assert "🎙️ Hlas" in HTML
-    assert "()=>submit('voice')" in HTML
+    assert "send.onclick=()=>submit()" in HTML
+    assert '<button id="microphone">' in HTML
+    assert '<button id="send">Odeslat</button><button id="speaker">' in HTML
+    assert "input.dataset.source='keyboard'" in HTML
+    assert "transcribe,__ASSISTANT_VOICE__" in HTML
     assert "__ASSISTANT_VOICE__" in HTML
     assert "📎 Přiložit soubor" in HTML
     assert "history.push({role:'user',content:text,attachment:sentAttachment})" in HTML

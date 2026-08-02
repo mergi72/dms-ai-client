@@ -18,9 +18,9 @@ VOICE_JS = r"""window.DMSVoice = (() => {
       || null;
   }
 
-  function initialize(input, microphoneButton, speakerButton, status, transcribe, submit, configuredVoice) {
+  function initialize(input, microphoneButton, speakerButton, status, transcribe, configuredVoice) {
     preferredVoiceName = configuredVoice || '';
-    microphoneButton.textContent = '\u{1F399}\u{FE0F} Nahrát a odeslat';
+    microphoneButton.textContent = '\u{1F399}\u{FE0F} Nadiktovat';
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       microphoneButton.disabled = true;
       microphoneButton.title = 'Nahrávání zvuku není v tomto prohlížeči dostupné.';
@@ -42,7 +42,7 @@ VOICE_JS = r"""window.DMSVoice = (() => {
           };
           recorder.onstart = () => {
             microphoneButton.classList.add('active');
-            microphoneButton.textContent = '\u23F9\u{FE0F} Zastavit a odeslat';
+            microphoneButton.textContent = '\u23F9\u{FE0F} Zastavit';
             status.textContent = 'Nahrávám hlas…';
             status.className = 'status';
           };
@@ -54,7 +54,7 @@ VOICE_JS = r"""window.DMSVoice = (() => {
             stream?.getTracks().forEach(track => track.stop());
             stream = null;
             microphoneButton.classList.remove('active');
-            microphoneButton.textContent = '\u{1F399}\u{FE0F} Nahrát a odeslat';
+            microphoneButton.textContent = '\u{1F399}\u{FE0F} Nadiktovat';
             try {
               const audio = new Blob(chunks, {type: recorder.mimeType || 'audio/webm'});
               if (!audio.size) throw new Error('Nahrávka je prázdná.');
@@ -67,7 +67,10 @@ VOICE_JS = r"""window.DMSVoice = (() => {
                 input.focus();
                 return;
               }
-              await submit();
+              input.dataset.source = 'voice';
+              status.textContent = 'Přepis je připravený ke kontrole a odeslání.';
+              status.className = 'status';
+              input.focus();
             } catch (error) {
               status.textContent = String(error);
               status.className = 'status error';
