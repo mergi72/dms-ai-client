@@ -31,6 +31,7 @@ def test_chat_ui_is_present() -> None:
     assert "function renderMarkdown" in HTML
     assert "document.createTextNode" in HTML
     assert "innerHTML" not in HTML
+    assert "DMSVoice.speak(rendered.innerText)" in HTML
 
 
 def test_messages_require_final_user_message() -> None:

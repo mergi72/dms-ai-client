@@ -46,7 +46,7 @@ Run the local chat UI:
 ```
 
 Then open `http://127.0.0.1:8790`. The client resolves the OpenAI API key from
-Credential Broker, uses the Responses API, and exposes the five read-only DMS
+Credential Broker, uses the Responses API, and exposes the six read-only DMS
 MCP tools to the configured model. Tool calls and results are visible in the
 chat. Document text/Base64 is removed from `read_document` tool output by
 default. The user may explicitly enable **Allow Demi to read DMS document
