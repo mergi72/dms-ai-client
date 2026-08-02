@@ -27,3 +27,5 @@ def test_stopping_dictation_submits_non_empty_text() -> None:
     assert "Nahrát a odeslat" in VOICE_JS
     assert "input.value = await transcribe(audio)" in VOICE_JS
     assert "await submit()" in VOICE_JS
+    assert "if (!input.value.trim())" in VOICE_JS
+    assert "status.textContent = 'Připraveno'" in VOICE_JS

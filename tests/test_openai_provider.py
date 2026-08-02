@@ -18,6 +18,9 @@ def test_system_prompt_defines_demi_identity() -> None:
     assert "Your name is Demi" in prompt
     assert "your name is Demi" in prompt
     assert "local chat attachment, not a DMS item" in prompt
+    assert "Reuse exact paths returned by MCP tools verbatim" in prompt
+    assert "list that connection root with list_items" in prompt
+    assert "current conversational location" in prompt
 
 
 def test_document_content_is_removed_before_returning_to_ai() -> None:

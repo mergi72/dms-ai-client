@@ -60,7 +60,13 @@ VOICE_JS = r"""window.DMSVoice = (() => {
               if (!audio.size) throw new Error('Nahrávka je prázdná.');
               status.textContent = 'Přepisuji hlas…';
               input.value = await transcribe(audio);
-              if (!input.value.trim()) throw new Error('V nahrávce nebyla rozpoznána řeč.');
+              if (!input.value.trim()) {
+                input.value = '';
+                status.textContent = 'Připraveno';
+                status.className = 'status';
+                input.focus();
+                return;
+              }
               await submit();
             } catch (error) {
               status.textContent = String(error);
