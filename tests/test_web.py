@@ -36,6 +36,11 @@ def test_chat_ui_is_present() -> None:
     assert "document.createTextNode" in HTML
     assert "innerHTML" not in HTML
     assert "DMSVoice.speak(rendered.innerText)" in HTML
+    assert 'id="learnCorrection"' in HTML
+    assert 'id="manageLearning"' in HTML
+    assert "/api/transcription/learn" in HTML
+    assert "/api/transcription/forget" in HTML
+    assert "Naučit opravu?" in HTML
 
 
 def test_messages_require_final_user_message() -> None:

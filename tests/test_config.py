@@ -20,10 +20,16 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
         machine,
         {
             "assistant": {"name": "Demi", "voice": "Vlasta"},
+            "voice": {
+                "transcription": {
+                    "model": "gpt-transcribe", "languages": ["cs"], "prompt": "Czech DMS commands.",
+                    "keywords": ["DMS", "eDoCat"],
+                    "learning": {"enabled": True, "requireConfirmation": True, "maxKeywords": 200, "maxCorrections": 200}
+                }
+            },
             "ai": {
                 "provider": "openai",
                 "model": "base",
-                "transcriptionModel": "gpt-4o-transcribe",
                 "credentialId": "openai/eli",
                 "maxOutputTokens": 1000,
                 "reasoningEffort": "low",
@@ -41,7 +47,9 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.ai_model == "override"
     assert settings.assistant_name == "Demi"
     assert settings.assistant_voice == "Vlasta"
-    assert settings.transcription_model == "gpt-4o-transcribe"
+    assert settings.transcription_model == "gpt-transcribe"
+    assert settings.transcription_languages == ("cs",)
+    assert settings.transcription_keywords == ("DMS", "eDoCat")
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790
     assert settings.max_attachment_bytes == 10485760

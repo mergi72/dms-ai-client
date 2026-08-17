@@ -3,10 +3,38 @@
     "name": "Demi",
     "voice": "Vlasta"
   },
+  "voice": {
+    "transcription": {
+      "model": "gpt-transcribe",
+      "languages": ["cs"],
+      "prompt": "České hlasové příkazy pro práci s firemním DMS. Uživatel vyhledává zakázky, složky a dokumenty a často diktuje čísla zakázek.",
+      "keywords": [
+        "kdo jsi",
+        "k čemu sloužíš",
+        "otevři",
+        "připoj se",
+        "vyhledej",
+        "zakázky v realizaci",
+        "nabídky procesu",
+        "nabídky neúspěšné",
+        "zakázky ukončené",
+        "dokumentace",
+        "DMS",
+        "Alfresco",
+        "eDoCat",
+        "WebDAV"
+      ],
+      "learning": {
+        "enabled": true,
+        "requireConfirmation": true,
+        "maxKeywords": 200,
+        "maxCorrections": 200
+      }
+    }
+  },
   "ai": {
     "provider": "openai",
     "model": "gpt-5.6-terra",
-    "transcriptionModel": "gpt-4o-transcribe",
     "credentialId": "openai/eli",
     "maxOutputTokens": 6000,
     "reasoningEffort": "low"
