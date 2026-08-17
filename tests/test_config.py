@@ -33,7 +33,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
                 "reasoningEffort": "low",
             },
             "broker": {"url": "http://127.0.0.1:8776"},
-            "mcp": {"command": "server.exe", "workingDirectory": ".", "timeoutSeconds": 30},
+            "mcp": {"url": "http://127.0.0.1:8781/mcp", "timeoutSeconds": 30},
             "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10485760, "maxArchiveExtractedBytes": 5242880, "maxArchiveFiles": 200},
         },
     )
@@ -63,7 +63,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.ui_port == 8790
     assert settings.max_attachment_bytes == 10485760
     assert settings.max_output_tokens == 1000
-    assert settings.mcp_working_directory.is_dir()
+    assert settings.mcp_url == "http://127.0.0.1:8781/mcp"
 
 
 @pytest.mark.parametrize("value", [1.9, True, "1.9", "12x", None])
@@ -85,7 +85,7 @@ def test_unknown_ai_provider_is_rejected(tmp_path: Path) -> None:
             "assistant": {"name": "Demi", "voice": "Vlasta"},
             "ai": {"provider": "unknown", "model": "model", "credentialId": "id", "maxOutputTokens": 100, "reasoningEffort": "low"},
             "broker": {"url": "http://127.0.0.1:8776"},
-            "mcp": {"command": "server.exe", "workingDirectory": ".", "timeoutSeconds": 30},
+            "mcp": {"url": "http://127.0.0.1:8781/mcp", "timeoutSeconds": 30},
             "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10, "maxArchiveExtractedBytes": 10, "maxArchiveFiles": 1},
         },
     )

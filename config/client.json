@@ -14,8 +14,7 @@
     "url": "http://127.0.0.1:8776"
   },
   "mcp": {
-    "command": "../dms-mcp-server/.venv/Scripts/dms-mcp-server.exe",
-    "workingDirectory": "../dms-mcp-server",
+    "url": "http://127.0.0.1:8781/mcp",
     "timeoutSeconds": 30
   },
   "ui": {

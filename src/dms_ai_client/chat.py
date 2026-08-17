@@ -23,8 +23,7 @@ class ChatService:
             self._settings.reasoning_effort,
         )
         connection = MCPConnection(
-            self._settings.mcp_command,
-            self._settings.mcp_working_directory,
+            self._settings.mcp_url,
             self._settings.mcp_timeout_seconds,
         )
         try:

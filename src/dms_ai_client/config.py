@@ -4,10 +4,11 @@ import json
 import os
 import re
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
-from dms_ai_client.paths import MACHINE_CONFIG_DIR, PROJECT_ROOT, USER_CONFIG_DIR
+from pathlib import Path
+
+from dms_ai_client.paths import MACHINE_CONFIG_DIR, USER_CONFIG_DIR
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
@@ -75,8 +76,7 @@ class Settings:
     max_output_tokens: int
     reasoning_effort: str
     broker_url: str
-    mcp_command: Path
-    mcp_working_directory: Path
+    mcp_url: str
     mcp_timeout_seconds: int
     ui_host: str
     ui_port: int
@@ -124,12 +124,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     if ai_provider.casefold() != "openai":
         raise ValueError(f"Unsupported AI provider: {ai_provider}")
 
-    command = Path(os.getenv("DMS_AI_MCP_COMMAND") or _text(mcp, "command", "mcp"))
-    if not command.is_absolute():
-        command = (PROJECT_ROOT / command).resolve()
-    working_directory = Path(os.getenv("DMS_AI_MCP_WORKING_DIRECTORY") or _text(mcp, "workingDirectory", "mcp"))
-    if not working_directory.is_absolute():
-        working_directory = (PROJECT_ROOT / working_directory).resolve()
+    mcp_url = (os.getenv("DMS_AI_MCP_URL") or _text(mcp, "url", "mcp")).rstrip("/")
     return Settings(
         assistant_name=os.getenv("DMS_AI_ASSISTANT_NAME") or _text(assistant, "name", "assistant"),
         assistant_voice=os.getenv("DMS_AI_ASSISTANT_VOICE") or _text(assistant, "voice", "assistant"),
@@ -147,8 +142,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         max_output_tokens=_positive_int(os.getenv("DMS_AI_MAX_OUTPUT_TOKENS", ai.get("maxOutputTokens")), "ai.maxOutputTokens"),
         reasoning_effort=os.getenv("DMS_AI_REASONING_EFFORT") or _text(ai, "reasoningEffort", "ai"),
         broker_url=(os.getenv("DMS_BROKER_URL") or _text(broker, "url", "broker")).rstrip("/"),
-        mcp_command=command,
-        mcp_working_directory=working_directory,
+        mcp_url=mcp_url,
         mcp_timeout_seconds=_positive_int(os.getenv("DMS_AI_MCP_TIMEOUT_SECONDS", mcp.get("timeoutSeconds")), "mcp.timeoutSeconds"),
         ui_host=_text(ui, "host", "ui"),
         ui_port=_positive_int(ui.get("port"), "ui.port"),

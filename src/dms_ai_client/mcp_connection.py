@@ -1,41 +1,36 @@
 from __future__ import annotations
 
 import json
-import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, AsyncIterator
+from urllib.parse import urlsplit
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+import httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
 
 
 @dataclass(frozen=True, slots=True)
 class MCPConnection:
-    command: Path
-    working_directory: Path
+    url: str
     timeout_seconds: int
 
     def check(self) -> None:
-        if not self.command.is_file():
-            raise FileNotFoundError(f"MCP server executable not found: {self.command}")
-        if not self.working_directory.is_dir():
-            raise FileNotFoundError(f"MCP working directory not found: {self.working_directory}")
+        parsed = urlsplit(self.url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("MCP URL must be an HTTP(S) URL without embedded credentials.")
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator["MCPSession"]:
         self.check()
-        params = StdioServerParameters(
-            command=str(self.command),
-            args=[],
-            cwd=str(self.working_directory),
-            env={**os.environ, "DMS_MCP_TIMEOUT_SECONDS": str(self.timeout_seconds)},
-        )
-        async with stdio_client(params) as streams:
-            async with ClientSession(*streams) as session:
-                await session.initialize()
-                yield MCPSession(session)
+        timeout = httpx.Timeout(self.timeout_seconds)
+        async with httpx.AsyncClient(timeout=timeout, trust_env=False) as http_client:
+            async with streamable_http_client(self.url, http_client=http_client) as streams:
+                read_stream, write_stream, _session_id = streams
+                async with ClientSession(read_stream, write_stream) as session:
+                    await session.initialize()
+                    yield MCPSession(session)
 
 
 class MCPSession:

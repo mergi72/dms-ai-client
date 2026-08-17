@@ -11,9 +11,9 @@ Browser / keyboard / microphone
                 |
           dms-ai-client
            |          |
-      OpenAI API   MCP stdio
+      OpenAI API   MCP HTTP
                       |
-               dms-mcp-server
+          dms-mcp-server service
                       |
              Bridge + Broker -> DMS
 ```
@@ -32,9 +32,9 @@ to Credential Broker and kept in memory.
 The current client supports the `openai` provider; other configured provider
 names are rejected during startup validation.
 
-The MCP executable and its working directory are configured independently in
-`config/client.json`, so the client does not depend on a Windows virtual
-environment layout.
+The MCP service URL is configured in `config/client.json`. The client never
+starts the MCP process and does not depend on its installation directory or
+virtual environment.
 
 ## Development
 
@@ -52,7 +52,7 @@ Run the local chat UI:
 ```
 
 Then open `http://127.0.0.1:8790`. The client resolves the OpenAI API key from
-Credential Broker, uses the Responses API, and exposes the six read-only DMS
+Credential Broker, uses the Responses API, and exposes the seven read-only DMS
 MCP tools to the configured model. Tool calls and results are visible in the
 chat. Document text/Base64 is removed from `read_document` tool output by
 default. The user may explicitly enable **Allow Demi to read DMS document
@@ -72,3 +72,7 @@ message.
 Optional text-to-speech remains
 behind an explicit speaker button. Voice remains a client concern and does not
 change the MCP server.
+
+The default MCP endpoint is `http://127.0.0.1:8781/mcp`. Start the independently
+installed `dms-mcp-server` service before using DMS tools. Override the endpoint
+with `mcp.url` in `client.local.json` or `DMS_AI_MCP_URL`.
