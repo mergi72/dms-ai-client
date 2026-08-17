@@ -17,6 +17,10 @@ class Correction:
 
 
 def _local_path(user_dir: Path | None = None) -> Path:
+    return (user_dir or USER_CONFIG_DIR) / "voice.local.json"
+
+
+def _legacy_local_path(user_dir: Path | None = None) -> Path:
     return (user_dir or USER_CONFIG_DIR) / "client.local.json"
 
 
@@ -30,7 +34,11 @@ def _payload(path: Path) -> dict[str, Any]:
 
 
 def learned_data(user_dir: Path | None = None) -> tuple[tuple[str, ...], tuple[Correction, ...]]:
-    transcription = _payload(_local_path(user_dir)).get("voice", {}).get("transcription", {})
+    path = _local_path(user_dir)
+    if path.exists():
+        transcription = _payload(path).get("transcription", {})
+    else:
+        transcription = _payload(_legacy_local_path(user_dir)).get("voice", {}).get("transcription", {})
     if not isinstance(transcription, dict):
         return (), ()
     raw_keywords = transcription.get("learnedKeywords", [])
@@ -77,10 +85,7 @@ def learn_correction(
         raise ValueError("Learned text must be one line up to 300 characters.")
     path = _local_path(user_dir)
     payload = _payload(path)
-    voice = payload.setdefault("voice", {})
-    if not isinstance(voice, dict):
-        raise ValueError("Local voice configuration must be an object.")
-    transcription = voice.setdefault("transcription", {})
+    transcription = payload.setdefault("transcription", {})
     if not isinstance(transcription, dict):
         raise ValueError("Local transcription configuration must be an object.")
     keywords, corrections = learned_data(user_dir)
@@ -103,7 +108,11 @@ def learn_correction(
 def forget_correction(heard: str, *, user_dir: Path | None = None) -> None:
     path = _local_path(user_dir)
     payload = _payload(path)
-    transcription = payload.get("voice", {}).get("transcription", {})
+    if not path.exists():
+        legacy = _payload(_legacy_local_path(user_dir)).get("voice", {}).get("transcription", {})
+        if isinstance(legacy, dict):
+            payload["transcription"] = dict(legacy)
+    transcription = payload.get("transcription", {})
     if not isinstance(transcription, dict):
         return
     corrections = transcription.get("corrections", [])

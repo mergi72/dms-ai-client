@@ -13,6 +13,11 @@ def _write(path: Path, payload: dict) -> None:
     (path / "client.json").write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_voice(path: Path, payload: dict) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "voice.json").write_text(json.dumps(payload), encoding="utf-8")
+
+
 def test_load_settings_and_user_override(tmp_path: Path) -> None:
     machine = tmp_path / "machine"
     user = tmp_path / "user"
@@ -20,13 +25,6 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
         machine,
         {
             "assistant": {"name": "Demi", "voice": "Vlasta"},
-            "voice": {
-                "transcription": {
-                    "model": "gpt-transcribe", "languages": ["cs"], "prompt": "Czech DMS commands.",
-                    "keywords": ["DMS", "eDoCat"],
-                    "learning": {"enabled": True, "requireConfirmation": True, "maxKeywords": 200, "maxCorrections": 200}
-                }
-            },
             "ai": {
                 "provider": "openai",
                 "model": "base",
@@ -39,8 +37,19 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
             "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10485760, "maxArchiveExtractedBytes": 5242880, "maxArchiveFiles": 200},
         },
     )
+    _write_voice(
+        machine,
+        {
+            "transcription": {
+                "model": "gpt-transcribe", "languages": ["cs"], "prompt": "Czech DMS commands.",
+                "keywords": ["DMS", "eDoCat"],
+                "learning": {"enabled": True, "requireConfirmation": True, "maxKeywords": 200, "maxCorrections": 200}
+            }
+        },
+    )
     user.mkdir(parents=True)
     (user / "client.local.json").write_text(json.dumps({"ai": {"model": "override"}}), encoding="utf-8")
+    (user / "voice.local.json").write_text(json.dumps({"transcription": {"keywords": ["DMS", "eDoCat"]}}), encoding="utf-8")
 
     settings = load_settings(machine, user)
 

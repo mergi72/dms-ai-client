@@ -95,17 +95,23 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     if local:
         payload = _merge(payload, local)
 
+    voice = _read_json(active_machine_dir / "voice.json")
+    if voice is None:
+        raise FileNotFoundError(f"Voice configuration not found: {active_machine_dir / 'voice.json'}")
+    voice_local = _read_json(active_user_dir / "voice.local.json") if active_user_dir else None
+    if voice_local:
+        voice = _merge(voice, voice_local)
+
     ai = payload.get("ai")
     assistant = payload.get("assistant")
-    voice = payload.get("voice")
     broker = payload.get("broker")
     mcp = payload.get("mcp")
     ui = payload.get("ui")
     if not all(isinstance(section, dict) for section in (assistant, voice, ai, broker, mcp, ui)):
-        raise ValueError("Configuration requires assistant, voice, ai, broker, mcp and ui JSON objects.")
+        raise ValueError("Configuration requires assistant, ai, broker, mcp and ui objects plus a voice JSON object.")
     transcription = voice.get("transcription")
     if not isinstance(transcription, dict):
-        raise ValueError("Configuration requires voice.transcription JSON object.")
+        raise ValueError("Voice configuration requires transcription JSON object.")
     learning = transcription.get("learning")
     if not isinstance(learning, dict):
         raise ValueError("Configuration requires voice.transcription.learning JSON object.")

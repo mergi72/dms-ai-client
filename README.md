@@ -21,6 +21,10 @@ Browser / keyboard / microphone
 Runtime data is stored in `config/client.json`, separately from application
 code. Optional user overrides live in
 `%APPDATA%\DMS AI Client\config\client.local.json`.
+Voice transcription and learning defaults are stored independently in
+`config/voice.json`. Optional voice overrides and Demi's confirmed learned
+corrections live only in
+`%APPDATA%\DMS AI Client\config\voice.local.json`.
 
 The OpenAI API key is never stored in this repository. The client configuration
 contains only `credentialId: openai/eli`; secret resolution will be delegated
@@ -55,10 +59,10 @@ configured AI provider. The browser records microphone audio locally and
 the backend transcribes it in Czech with the configured OpenAI transcription
 model. The transcript remains in the input field for review and manual sending.
 Transcription defaults, language hints, vocabulary, and learning limits are
-configured under `voice.transcription` in `config/client.json`. After reviewing
+configured under `transcription` in `config/voice.json`. After reviewing
 and correcting a transcript, the user can explicitly choose **Teach correction**.
 Confirmed personal keywords and corrections are written atomically only to
-`%APPDATA%\DMS AI Client\config\client.local.json`; the project configuration is
+`%APPDATA%\DMS AI Client\config\voice.local.json`; the project configuration is
 never modified. The **Dictionary** dialog lists learned corrections and allows
 the user to forget them. Demi never learns silently or from an ordinary chat
 message.
