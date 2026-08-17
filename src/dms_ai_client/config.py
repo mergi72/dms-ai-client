@@ -120,6 +120,10 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     if not isinstance(enabled, bool) or not isinstance(require_confirmation, bool):
         raise ValueError("Transcription learning flags must be booleans.")
 
+    ai_provider = os.getenv("DMS_AI_PROVIDER") or _text(ai, "provider", "ai")
+    if ai_provider.casefold() != "openai":
+        raise ValueError(f"Unsupported AI provider: {ai_provider}")
+
     command = Path(os.getenv("DMS_AI_MCP_COMMAND") or _text(mcp, "command", "mcp"))
     if not command.is_absolute():
         command = (PROJECT_ROOT / command).resolve()
@@ -129,7 +133,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     return Settings(
         assistant_name=os.getenv("DMS_AI_ASSISTANT_NAME") or _text(assistant, "name", "assistant"),
         assistant_voice=os.getenv("DMS_AI_ASSISTANT_VOICE") or _text(assistant, "voice", "assistant"),
-        ai_provider=os.getenv("DMS_AI_PROVIDER") or _text(ai, "provider", "ai"),
+        ai_provider="openai",
         ai_model=os.getenv("DMS_AI_MODEL") or _text(ai, "model", "ai"),
         transcription_model=os.getenv("DMS_AI_TRANSCRIPTION_MODEL") or _text(transcription, "model", "voice.transcription"),
         transcription_languages=_string_list(transcription.get("languages"), "voice.transcription.languages"),

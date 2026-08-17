@@ -31,7 +31,9 @@ def test_chat_ui_is_present() -> None:
     assert "Ponechat pro další dotazy" in HTML
     assert "history.forEach(item=>delete item.attachment)" in HTML
     assert "Povolit Demi číst obsah DMS dokumentů" in HTML
-    assert "allow_document_content:allowDocumentContent.checked" in HTML
+    assert "allowContent=allowDocumentContent.checked" in HTML
+    assert "allowDocumentContent.checked=false" in HTML
+    assert "allow_document_content:allowContent" in HTML
     assert "function renderMarkdown" in HTML
     assert "document.createTextNode" in HTML
     assert "innerHTML" not in HTML

@@ -29,6 +29,8 @@ corrections live only in
 The OpenAI API key is never stored in this repository. The client configuration
 contains only `credentialId: openai/eli`; secret resolution will be delegated
 to Credential Broker and kept in memory.
+The current client supports the `openai` provider; other configured provider
+names are rejected during startup validation.
 
 The MCP executable and its working directory are configured independently in
 `config/client.json`, so the client does not depend on a Windows virtual
@@ -55,7 +57,8 @@ MCP tools to the configured model. Tool calls and results are visible in the
 chat. Document text/Base64 is removed from `read_document` tool output by
 default. The user may explicitly enable **Allow Demi to read DMS document
 content** for a request; only then is the size-limited document passed to the
-configured AI provider. The browser records microphone audio locally and
+configured AI provider. This approval is consumed by that request and the
+checkbox is cleared automatically. The browser records microphone audio locally and
 the backend transcribes it in Czech with the configured OpenAI transcription
 model. The transcript remains in the input field for review and manual sending.
 Transcription defaults, language hints, vocabulary, and learning limits are

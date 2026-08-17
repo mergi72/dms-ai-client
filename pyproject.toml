@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dms-ai-client"
-version = "0.7.1"
+version = "0.7.2"
 description = "Local AI client for the read-only DMS MCP server."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,3 +29,7 @@ pythonpath = ["src"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dms_ai_client"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"config/client.json" = "dms_ai_client/default_config/client.json"
+"config/voice.json" = "dms_ai_client/default_config/voice.json"

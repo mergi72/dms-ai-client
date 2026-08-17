@@ -74,3 +74,22 @@ def test_positive_int_rejects_non_integers(value: object) -> None:
 
 def test_positive_int_accepts_integer_string() -> None:
     assert _positive_int(" 42 ", "test.value") == 42
+
+
+def test_unknown_ai_provider_is_rejected(tmp_path: Path) -> None:
+    machine = tmp_path / "machine"
+    user = tmp_path / "user"
+    _write(
+        machine,
+        {
+            "assistant": {"name": "Demi", "voice": "Vlasta"},
+            "ai": {"provider": "unknown", "model": "model", "credentialId": "id", "maxOutputTokens": 100, "reasoningEffort": "low"},
+            "broker": {"url": "http://127.0.0.1:8776"},
+            "mcp": {"command": "server.exe", "workingDirectory": ".", "timeoutSeconds": 30},
+            "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10, "maxArchiveExtractedBytes": 10, "maxArchiveFiles": 1},
+        },
+    )
+    _write_voice(machine, {"transcription": {"model": "model", "languages": ["cs"], "prompt": "prompt", "keywords": [], "learning": {"enabled": True, "requireConfirmation": True, "maxKeywords": 1, "maxCorrections": 1}}})
+    user.mkdir()
+    with pytest.raises(ValueError, match="Unsupported AI provider"):
+        load_settings(machine, user)

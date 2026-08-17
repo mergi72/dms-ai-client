@@ -28,3 +28,13 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+      - name: Build wheel
+        run: python -m pip wheel . --no-deps --wheel-dir tmp/wheel-check
+
+      - name: Verify packaged configuration
+        run: >-
+          python -c "import glob, zipfile;
+          names=set(zipfile.ZipFile(glob.glob('tmp/wheel-check/*.whl')[0]).namelist());
+          assert {'dms_ai_client/default_config/client.json',
+          'dms_ai_client/default_config/voice.json'} <= names"
