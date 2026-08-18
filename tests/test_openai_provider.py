@@ -86,3 +86,44 @@ def test_chat_completes_ai_mcp_ai_round_trip() -> None:
     output = next(item for item in responses.requests[1]["input"] if isinstance(item, dict) and item.get("type") == "function_call_output")
     assert output["type"] == "function_call_output"
     assert json.loads(output["output"])["ok"] is True
+
+
+def test_chat_returns_mcp_tool_error_to_ai_instead_of_failing() -> None:
+    call = SimpleNamespace(type="function_call", name="list_items", arguments='{"path":"alfresco:/bad"}', call_id="call-1")
+    first = SimpleNamespace(output=[call], output_text="", id="r1", status="completed")
+    message = SimpleNamespace(type="message")
+    second = SimpleNamespace(output=[message], output_text="Cestu se nepodařilo otevřít.", id="r2", status="completed")
+
+    class Responses:
+        def __init__(self) -> None:
+            self.requests = []
+
+        async def create(self, **kwargs):
+            self.requests.append(kwargs)
+            return first if len(self.requests) == 1 else second
+
+    class MCP:
+        async def openai_tools(self):
+            return [{"type": "function", "name": "list_items", "description": "", "parameters": {}}]
+
+        async def call(self, name, arguments):
+            raise RuntimeError("Unable to resolve Alfresco path")
+
+    provider = object.__new__(OpenAIProvider)
+    responses = Responses()
+    provider._client = SimpleNamespace(responses=responses)
+    provider._assistant_name = "Demi"
+    provider._model = "test-model"
+    provider._max_output_tokens = 100
+    provider._reasoning_effort = "low"
+
+    result = asyncio.run(provider.chat([{"role": "user", "content": "Otevři cestu"}], MCP()))
+
+    assert result.text == "Cestu se nepodařilo otevřít."
+    output = next(item for item in responses.requests[1]["input"] if isinstance(item, dict) and item.get("type") == "function_call_output")
+    payload = json.loads(output["output"])
+    assert payload == {
+        "ok": False,
+        "error_type": "tool_execution_error",
+        "message": "Unable to resolve Alfresco path",
+    }

@@ -5,6 +5,7 @@ import base64
 import binascii
 import io
 import json
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping
 import zipfile
@@ -209,11 +210,12 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
                     self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
             except (ValueError, json.JSONDecodeError) as exc: self._json(400,{"error":str(exc)})
             except Exception as exc:
-                print(f"Chat request failed: {exc!r}")
+                print(f"Chat request failed: {exc!r}", flush=True)
+                traceback.print_exc()
                 self._json(502,{"error":"Požadavek se nepodařilo zpracovat. Podrobnosti jsou v lokálním logu."})
 
         def log_message(self, format: str, *args: Any) -> None:
-            print(f"HTTP {self.address_string()} - {format % args}")
+            print(f"HTTP {self.address_string()} - {format % args}", flush=True)
 
     return Handler
 

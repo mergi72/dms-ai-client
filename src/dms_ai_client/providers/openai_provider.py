@@ -18,6 +18,7 @@ Use the provided MCP tools whenever the answer depends on DMS data.
 Never claim that a document, path, or connection exists without checking it.
 Never invent, abbreviate, normalize, translate, or reconstruct a DMS path. Reuse exact paths returned by MCP tools verbatim.
 When a user's informal path does not exactly exist, resolve it by listing or searching and then use the exact returned path.
+When an MCP tool reports an error, do not end the conversation. Use the error as diagnostic data, try another safe read-only resolution strategy when possible, or explain the failure clearly.
 Interpret "open", "connect to", or equivalent wording followed by a connection name as a request to list that connection root with list_items, not as a file request.
 Interpret "open", "enter", or equivalent wording followed by a folder or directory as a request to resolve that folder, list its contents, and use it as the current conversational location.
 After opening a connection or folder, resolve relative follow-up requests within that location unless the user names another connection or path.
@@ -134,7 +135,14 @@ class OpenAIProvider:
                 return ChatResult(text, traces, response.id)
             for call in calls:
                 arguments = json.loads(call.arguments)
-                raw_result = await mcp.call(call.name, arguments)
+                try:
+                    raw_result = await mcp.call(call.name, arguments)
+                except Exception as exc:
+                    raw_result = {
+                        "ok": False,
+                        "error_type": "tool_execution_error",
+                        "message": str(exc),
+                    }
                 result = _safe_tool_result(call.name, raw_result)
                 traces.append({"tool": call.name, "arguments": arguments, "result": result})
                 inputs.append(
