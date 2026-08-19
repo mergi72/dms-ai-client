@@ -16,6 +16,7 @@ from dms_ai_client.chat import ChatService
 from dms_ai_client.config import Settings
 from dms_ai_client.learning import forget_correction, learn_correction, learned_data
 from dms_ai_client.transcription import TranscriptionService
+from dms_ai_client.tracing import new_correlation_id
 from dms_ai_client.voice import VOICE_JS
 
 
@@ -182,6 +183,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
         def do_POST(self) -> None:  # noqa: N802
             if self.path not in {"/api/chat", "/api/transcribe", "/api/transcription/learn", "/api/transcription/forget"}: self.send_error(404);return
             started = perf_counter()
+            correlation_id = new_correlation_id() if self.path == "/api/chat" else "-"
             try:
                 if self.path in {"/api/chat", "/api/transcription/learn", "/api/transcription/forget"}:
                     _validate_headers(self.headers, self.server.server_port)
@@ -219,14 +221,14 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
                     allow_document_content = payload.get("allow_document_content", False)
                     if not isinstance(allow_document_content, bool):
                         raise ValueError("allow_document_content must be a boolean.")
-                    result=asyncio.run(service.chat(messages, allow_document_content))
-                    self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
-                LOGGER.info("demi_request method=POST path=%s status=200 duration_ms=%d", self.path, round((perf_counter()-started)*1000))
+                    result=asyncio.run(service.chat(messages, allow_document_content, correlation_id))
+                    self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model,"correlation_id":correlation_id})
+                LOGGER.info("demi_request correlation_id=%s method=POST path=%s status=200 duration_ms=%d", correlation_id, self.path, round((perf_counter()-started)*1000))
             except (ValueError, json.JSONDecodeError) as exc:
-                LOGGER.warning("demi_request method=POST path=%s status=400 error_type=%s duration_ms=%d", self.path, type(exc).__name__, round((perf_counter()-started)*1000))
+                LOGGER.warning("demi_request correlation_id=%s method=POST path=%s status=400 error_type=%s duration_ms=%d", correlation_id, self.path, type(exc).__name__, round((perf_counter()-started)*1000))
                 self._json(400,{"error":str(exc)})
             except Exception as exc:
-                LOGGER.exception("demi_request method=POST path=%s status=502 error_type=%s duration_ms=%d", self.path, type(exc).__name__, round((perf_counter()-started)*1000))
+                LOGGER.exception("demi_request correlation_id=%s method=POST path=%s status=502 error_type=%s duration_ms=%d", correlation_id, self.path, type(exc).__name__, round((perf_counter()-started)*1000))
                 self._json(502,{"error":"Požadavek se nepodařilo zpracovat. Podrobnosti jsou v lokálním logu."})
 
         def log_message(self, format: str, *args: Any) -> None:

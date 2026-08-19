@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dms-ai-client"
-version = "0.10.0"
+version = "0.10.1"
 description = "Local AI client for the read-only DMS MCP server."
 readme = "README.md"
 requires-python = ">=3.11"

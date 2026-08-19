@@ -10,6 +10,8 @@ import httpx
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
+from dms_ai_client.tracing import CORRELATION_HEADER
+
 
 @dataclass(frozen=True, slots=True)
 class MCPConnection:
@@ -22,13 +24,16 @@ class MCPConnection:
             raise ValueError("MCP URL must be an HTTP(S) URL without embedded credentials.")
 
     @asynccontextmanager
-    async def session(self) -> AsyncIterator["MCPSession"]:
+    async def session(self, correlation_id: str | None = None) -> AsyncIterator["MCPSession"]:
         self.check()
         timeout = httpx.Timeout(self.timeout_seconds)
+        headers = {"X-VFS-Component": "demi"}
+        if correlation_id:
+            headers[CORRELATION_HEADER] = correlation_id
         async with httpx.AsyncClient(
             timeout=timeout,
             trust_env=False,
-            headers={"X-VFS-Component": "demi"},
+            headers=headers,
         ) as http_client:
             async with streamable_http_client(self.url, http_client=http_client) as streams:
                 read_stream, write_stream, _session_id = streams

@@ -4,18 +4,23 @@ from typing import Any
 
 import httpx
 
+from dms_ai_client.tracing import CORRELATION_HEADER
+
 
 class BrokerError(RuntimeError):
     """Credential Broker did not provide the requested secret."""
 
 
 class BrokerClient:
-    def __init__(self, base_url: str, timeout: float = 30) -> None:
+    def __init__(self, base_url: str, timeout: float = 30, correlation_id: str | None = None) -> None:
+        headers = {"X-VFS-Component": "demi"}
+        if correlation_id:
+            headers[CORRELATION_HEADER] = correlation_id
         self._client = httpx.Client(
             base_url=base_url,
             timeout=timeout,
             trust_env=False,
-            headers={"X-VFS-Component": "demi"},
+            headers=headers,
         )
 
     def resolve_secret(self, credential_id: str) -> str:
