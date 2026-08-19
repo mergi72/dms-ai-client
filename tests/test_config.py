@@ -18,6 +18,14 @@ def _write_voice(path: Path, payload: dict) -> None:
     (path / "voice.json").write_text(json.dumps(payload), encoding="utf-8")
 
 
+def _write_skills(path: Path, payload: dict | None = None) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "skills.json").write_text(
+        json.dumps(payload or {"skills": {"core": {"enabled": True, "instructions": ["Use MCP tools."]}}}),
+        encoding="utf-8",
+    )
+
+
 def test_load_settings_and_user_override(tmp_path: Path) -> None:
     machine = tmp_path / "machine"
     user = tmp_path / "user"
@@ -48,6 +56,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
             }
         },
     )
+    _write_skills(machine)
     user.mkdir(parents=True)
     (user / "client.local.json").write_text(json.dumps({"ai": {"model": "override"}}), encoding="utf-8")
     (user / "voice.local.json").write_text(json.dumps({"transcription": {"keywords": ["DMS", "eDoCat"]}}), encoding="utf-8")
@@ -60,6 +69,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.transcription_model == "gpt-transcribe"
     assert settings.transcription_languages == ("cs",)
     assert settings.transcription_keywords == ("DMS", "eDoCat")
+    assert settings.skill_sections == (("core", ("Use MCP tools.",)),)
     assert settings.ai_credential_id == "openai/eli"
     assert settings.ui_port == 8790
     assert settings.max_attachment_bytes == 10485760
@@ -93,6 +103,31 @@ def test_unknown_ai_provider_is_rejected(tmp_path: Path) -> None:
         },
     )
     _write_voice(machine, {"transcription": {"model": "model", "languages": ["cs"], "prompt": "prompt", "keywords": [], "learning": {"enabled": True, "requireConfirmation": True, "maxKeywords": 1, "maxCorrections": 1}}})
+    _write_skills(machine)
     user.mkdir()
     with pytest.raises(ValueError, match="Unsupported AI provider"):
         load_settings(machine, user)
+
+
+def test_user_skills_override_can_disable_section(tmp_path: Path) -> None:
+    machine = tmp_path / "machine"
+    user = tmp_path / "user"
+    _write_skills(
+        machine,
+        {
+            "skills": {
+                "core": {"enabled": True, "instructions": ["Core rule."]},
+                "search": {"enabled": True, "instructions": ["Search rule."]},
+            }
+        },
+    )
+    user.mkdir(parents=True)
+    (user / "skills.local.json").write_text(
+        json.dumps({"skills": {"search": {"enabled": False}}}),
+        encoding="utf-8",
+    )
+
+    from dms_ai_client.config import _read_json, _merge, _skill_sections
+
+    merged = _merge(_read_json(machine / "skills.json"), _read_json(user / "skills.local.json"))
+    assert _skill_sections(merged) == (("core", ("Core rule.",)),)

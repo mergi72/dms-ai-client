@@ -19,6 +19,7 @@ class ChatService:
         messages: list[dict[str, Any]],
         allow_document_content: bool = False,
         correlation_id: str | None = None,
+        current_location: str | None = None,
     ) -> ChatResult:
         started = perf_counter()
         logger = logging.getLogger("demi")
@@ -36,11 +37,12 @@ class ChatService:
                 self._settings.ai_model,
                 self._settings.max_output_tokens,
                 self._settings.reasoning_effort,
+                self._settings.skill_sections,
             )
             connection = MCPConnection(self._settings.mcp_url, self._settings.mcp_timeout_seconds)
             try:
                 async with connection.session(correlation_id) as mcp:
-                    result = await provider.chat(messages, mcp, allow_document_content)
+                    result = await provider.chat(messages, mcp, allow_document_content, current_location)
             finally:
                 await provider.close()
         except Exception:

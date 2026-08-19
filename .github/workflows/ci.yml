@@ -37,4 +37,5 @@ jobs:
           python -c "import glob, zipfile;
           names=set(zipfile.ZipFile(glob.glob('tmp/wheel-check/*.whl')[0]).namelist());
           assert {'dms_ai_client/default_config/client.json',
-          'dms_ai_client/default_config/voice.json'} <= names"
+          'dms_ai_client/default_config/voice.json',
+          'dms_ai_client/default_config/skills.json'} <= names"

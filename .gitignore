@@ -10,3 +10,4 @@ build/
 tmp/
 config/client.local.json
 config/voice.local.json
+config/skills.local.json

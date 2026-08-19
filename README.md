@@ -15,7 +15,7 @@ Browser / keyboard / microphone
                       |
           dms-mcp-server service
                       |
-             Bridge + Broker -> DMS
+                  Bridge -> DMS
 ```
 
 Runtime data is stored in `config/client.json`, separately from application
@@ -25,6 +25,13 @@ Voice transcription and learning defaults are stored independently in
 `config/voice.json`. Optional voice overrides and Demi's confirmed learned
 corrections live only in
 `%APPDATA%\DMS AI Client\config\voice.local.json`.
+
+Behavioral skills are stored independently in `config/skills.json`. Optional
+per-user overrides live in
+`%APPDATA%\DMS AI Client\config\skills.local.json`. Skills describe how Demi
+discovers connections, navigates, searches, inspects, reads, opens shared URLs
+and recovers from errors. Connection names and mounts are always discovered
+dynamically through MCP and are never stored in Demi's skills.
 
 The `debug` section of `client.json` controls VFS Debugger integration. Demi
 always writes UTF-8 operational events to `demi.log`; with `debug.enable` it
@@ -79,6 +86,12 @@ message.
 Optional text-to-speech remains
 behind an explicit speaker button. Voice remains a client concern and does not
 change the MCP server.
+
+The browser keeps the exact path from the last successful folder listing as
+the current conversational location. It sends that verified path with the next
+request, so relative follow-up questions are deterministic without sharing
+state between browser sessions. Failed tool calls never replace the last
+verified location.
 
 The default MCP endpoint is `http://127.0.0.1:8781/mcp`. Start the independently
 installed `dms-mcp-server` service before using DMS tools. Override the endpoint

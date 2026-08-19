@@ -8,7 +8,7 @@ import pytest
 
 from dms_ai_client.config import load_settings
 from dms_ai_client.paths import MACHINE_CONFIG_DIR
-from dms_ai_client.web import HTML, _attachment, _health_payload, _messages, _validate_headers
+from dms_ai_client.web import HTML, _attachment, _current_location, _health_payload, _messages, _validate_headers
 
 
 def test_chat_ui_is_present() -> None:
@@ -43,6 +43,8 @@ def test_chat_ui_is_present() -> None:
     assert "/api/transcription/learn" in HTML
     assert "/api/transcription/forget" in HTML
     assert "Naučit opravu?" in HTML
+    assert "current_location:currentLocation" in HTML
+    assert "currentLocation=data.current_location||null" in HTML
 
 
 def test_health_payload_identifies_demi() -> None:
@@ -55,6 +57,12 @@ def test_health_payload_identifies_demi() -> None:
 def test_messages_require_final_user_message() -> None:
     with pytest.raises(ValueError, match="final message"):
         _messages({"messages":[{"role":"assistant","content":"hello"}]})
+
+
+def test_current_location_requires_connection_path() -> None:
+    assert _current_location({"current_location": "firma:/Projects"}) == "firma:/Projects"
+    with pytest.raises(ValueError, match="current_location"):
+        _current_location({"current_location": "/Projects"})
 
 
 def test_headers_reject_foreign_origin() -> None:

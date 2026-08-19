@@ -5,8 +5,9 @@ import json
 from types import SimpleNamespace
 
 from dms_ai_client.providers.openai_provider import (
-    SYSTEM_PROMPT,
     OpenAIProvider,
+    _updated_location,
+    build_system_prompt,
     _document_content_input,
     _inputs,
     _safe_tool_result,
@@ -14,13 +15,34 @@ from dms_ai_client.providers.openai_provider import (
 
 
 def test_system_prompt_defines_demi_identity() -> None:
-    prompt = SYSTEM_PROMPT.format(assistant_name="Demi")
+    prompt = build_system_prompt(
+        "Demi",
+        (("connections", ("Discover connections dynamically.",)),),
+        "firma:/Projects",
+    )
     assert "Your name is Demi" in prompt
     assert "your name is Demi" in prompt
-    assert "local chat attachment, not a DMS item" in prompt
-    assert "Reuse exact paths returned by MCP tools verbatim" in prompt
-    assert "list that connection root with list_items" in prompt
-    assert "current conversational location" in prompt
+    assert "[connections]" in prompt
+    assert "Discover connections dynamically." in prompt
+    assert "Current verified location: firma:/Projects" in prompt
+
+
+def test_successful_listing_updates_verified_location() -> None:
+    assert _updated_location(
+        "list_items",
+        {"path": "firma:/Projects"},
+        {"ok": True, "data": {"items": []}},
+        None,
+    ) == "firma:/Projects"
+
+
+def test_failed_listing_preserves_verified_location() -> None:
+    assert _updated_location(
+        "list_items",
+        {"path": "firma:/Missing"},
+        {"ok": False},
+        "firma:/Projects",
+    ) == "firma:/Projects"
 
 
 def test_document_content_is_removed_before_returning_to_ai() -> None:
@@ -77,11 +99,13 @@ def test_chat_completes_ai_mcp_ai_round_trip() -> None:
     provider._model = "test-model"
     provider._max_output_tokens = 100
     provider._reasoning_effort = "low"
+    provider._skill_sections = (("core", ("Use MCP tools.",)),)
     mcp = MCP()
 
     result = asyncio.run(provider.chat([{"role": "user", "content": "Připojení?"}], mcp))
 
     assert result.text == "Hotovo"
+    assert result.current_location is None
     assert mcp.calls == [("list_connections", {})]
     output = next(item for item in responses.requests[1]["input"] if isinstance(item, dict) and item.get("type") == "function_call_output")
     assert output["type"] == "function_call_output"
@@ -116,6 +140,7 @@ def test_chat_returns_mcp_tool_error_to_ai_instead_of_failing() -> None:
     provider._model = "test-model"
     provider._max_output_tokens = 100
     provider._reasoning_effort = "low"
+    provider._skill_sections = (("core", ("Use MCP tools.",)),)
 
     result = asyncio.run(provider.chat([{"role": "user", "content": "Otevři cestu"}], MCP()))
 

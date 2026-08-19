@@ -58,6 +58,26 @@ def _string_list(value: Any, location: str) -> tuple[str, ...]:
     return tuple(dict.fromkeys(item.strip() for item in value))
 
 
+def _skill_sections(payload: dict[str, Any]) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    sections = payload.get("skills")
+    if not isinstance(sections, dict) or not sections:
+        raise ValueError("Skills configuration requires a non-empty skills JSON object.")
+    result: list[tuple[str, tuple[str, ...]]] = []
+    for name, section in sections.items():
+        if not isinstance(name, str) or not name.strip() or not isinstance(section, dict):
+            raise ValueError("Each skill must have a non-empty name and a JSON object value.")
+        enabled = section.get("enabled", True)
+        if not isinstance(enabled, bool):
+            raise ValueError(f"skills.{name}.enabled must be a boolean.")
+        if not enabled:
+            continue
+        instructions = _string_list(section.get("instructions"), f"skills.{name}.instructions")
+        result.append((name.strip(), instructions))
+    if not result:
+        raise ValueError("At least one skill must be enabled.")
+    return tuple(result)
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     assistant_name: str
@@ -72,6 +92,7 @@ class Settings:
     learning_require_confirmation: bool
     learning_max_keywords: int
     learning_max_corrections: int
+    skill_sections: tuple[tuple[str, tuple[str, ...]], ...]
     ai_credential_id: str
     max_output_tokens: int
     reasoning_effort: str
@@ -103,6 +124,13 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     voice_local = _read_json(active_user_dir / "voice.local.json") if active_user_dir else None
     if voice_local:
         voice = _merge(voice, voice_local)
+
+    skills = _read_json(active_machine_dir / "skills.json")
+    if skills is None:
+        raise FileNotFoundError(f"Skills configuration not found: {active_machine_dir / 'skills.json'}")
+    skills_local = _read_json(active_user_dir / "skills.local.json") if active_user_dir else None
+    if skills_local:
+        skills = _merge(skills, skills_local)
 
     ai = payload.get("ai")
     assistant = payload.get("assistant")
@@ -149,6 +177,7 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         learning_require_confirmation=require_confirmation,
         learning_max_keywords=_positive_int(learning.get("maxKeywords"), "voice.transcription.learning.maxKeywords"),
         learning_max_corrections=_positive_int(learning.get("maxCorrections"), "voice.transcription.learning.maxCorrections"),
+        skill_sections=_skill_sections(skills),
         ai_credential_id=os.getenv("DMS_AI_CREDENTIAL_ID") or _text(ai, "credentialId", "ai"),
         max_output_tokens=_positive_int(os.getenv("DMS_AI_MAX_OUTPUT_TOKENS", ai.get("maxOutputTokens")), "ai.maxOutputTokens"),
         reasoning_effort=os.getenv("DMS_AI_REASONING_EFFORT") or _text(ai, "reasoningEffort", "ai"),
