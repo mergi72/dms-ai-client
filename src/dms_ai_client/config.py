@@ -83,6 +83,8 @@ class Settings:
     max_attachment_bytes: int
     max_archive_extracted_bytes: int
     max_archive_files: int
+    debug_enabled: bool = False
+    debug_path: str = "%APPDATA%\\DMS AI Client\\logs"
 
 
 def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None) -> Settings:
@@ -107,8 +109,17 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
     broker = payload.get("broker")
     mcp = payload.get("mcp")
     ui = payload.get("ui")
+    debug = payload.get("debug", {})
     if not all(isinstance(section, dict) for section in (assistant, voice, ai, broker, mcp, ui)):
         raise ValueError("Configuration requires assistant, ai, broker, mcp and ui objects plus a voice JSON object.")
+    if not isinstance(debug, dict):
+        raise ValueError("Configuration debug must be a JSON object.")
+    debug_enabled = debug.get("enable", False)
+    if not isinstance(debug_enabled, bool):
+        raise ValueError("debug.enable must be a boolean.")
+    debug_path = debug.get("path", "%APPDATA%\\DMS AI Client\\logs")
+    if not isinstance(debug_path, str) or not debug_path.strip():
+        raise ValueError("debug.path must be a non-empty string.")
     transcription = voice.get("transcription")
     if not isinstance(transcription, dict):
         raise ValueError("Voice configuration requires transcription JSON object.")
@@ -149,4 +160,6 @@ def load_settings(machine_dir: Path | None = None, user_dir: Path | None = None)
         max_attachment_bytes=_positive_int(ui.get("maxAttachmentBytes"), "ui.maxAttachmentBytes"),
         max_archive_extracted_bytes=_positive_int(ui.get("maxArchiveExtractedBytes"), "ui.maxArchiveExtractedBytes"),
         max_archive_files=_positive_int(ui.get("maxArchiveFiles"), "ui.maxArchiveFiles"),
+        debug_enabled=debug_enabled,
+        debug_path=os.path.expandvars(debug_path.strip()),
     )

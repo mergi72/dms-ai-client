@@ -5,8 +5,9 @@ import base64
 import binascii
 import io
 import json
-import traceback
+import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from time import perf_counter
 from typing import Any, Mapping
 import zipfile
 
@@ -16,6 +17,9 @@ from dms_ai_client.config import Settings
 from dms_ai_client.learning import forget_correction, learn_correction, learned_data
 from dms_ai_client.transcription import TranscriptionService
 from dms_ai_client.voice import VOICE_JS
+
+
+LOGGER = logging.getLogger("demi")
 
 
 HTML = r"""<!doctype html>
@@ -162,7 +166,9 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
             self.send_response(status);self.send_header("Content-Type","application/json; charset=utf-8");self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
 
         def do_GET(self) -> None:  # noqa: N802
-            if self.path == "/health": self._json(200, _health_payload());return
+            if self.path == "/health":
+                LOGGER.info("health_check status=ok service=demi version=%s", __version__)
+                self._json(200, _health_payload());return
             if self.path == "/": body=HTML.replace("__ASSISTANT_VOICE__", json.dumps(settings.assistant_voice, ensure_ascii=False)).replace("__MAX_ATTACHMENT_BYTES__", str(settings.max_attachment_bytes)).encode();content_type="text/html; charset=utf-8"
             elif self.path == "/voice.js": body=VOICE_JS.encode();content_type="text/javascript; charset=utf-8"
             elif self.path == "/api/transcription/learning":
@@ -175,6 +181,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:  # noqa: N802
             if self.path not in {"/api/chat", "/api/transcribe", "/api/transcription/learn", "/api/transcription/forget"}: self.send_error(404);return
+            started = perf_counter()
             try:
                 if self.path in {"/api/chat", "/api/transcription/learn", "/api/transcription/forget"}:
                     _validate_headers(self.headers, self.server.server_port)
@@ -214,14 +221,16 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
                         raise ValueError("allow_document_content must be a boolean.")
                     result=asyncio.run(service.chat(messages, allow_document_content))
                     self._json(200,{"text":result.text,"tool_calls":result.tool_calls,"response_id":result.response_id,"model":settings.ai_model})
-            except (ValueError, json.JSONDecodeError) as exc: self._json(400,{"error":str(exc)})
+                LOGGER.info("demi_request method=POST path=%s status=200 duration_ms=%d", self.path, round((perf_counter()-started)*1000))
+            except (ValueError, json.JSONDecodeError) as exc:
+                LOGGER.warning("demi_request method=POST path=%s status=400 error_type=%s duration_ms=%d", self.path, type(exc).__name__, round((perf_counter()-started)*1000))
+                self._json(400,{"error":str(exc)})
             except Exception as exc:
-                print(f"Chat request failed: {exc!r}", flush=True)
-                traceback.print_exc()
+                LOGGER.exception("demi_request method=POST path=%s status=502 error_type=%s duration_ms=%d", self.path, type(exc).__name__, round((perf_counter()-started)*1000))
                 self._json(502,{"error":"Požadavek se nepodařilo zpracovat. Podrobnosti jsou v lokálním logu."})
 
         def log_message(self, format: str, *args: Any) -> None:
-            print(f"HTTP {self.address_string()} - {format % args}", flush=True)
+            LOGGER.info("demi_http client=%s message=%r", self.address_string(), format % args)
 
     return Handler
 

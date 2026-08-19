@@ -25,7 +25,11 @@ class MCPConnection:
     async def session(self) -> AsyncIterator["MCPSession"]:
         self.check()
         timeout = httpx.Timeout(self.timeout_seconds)
-        async with httpx.AsyncClient(timeout=timeout, trust_env=False) as http_client:
+        async with httpx.AsyncClient(
+            timeout=timeout,
+            trust_env=False,
+            headers={"X-VFS-Component": "demi"},
+        ) as http_client:
             async with streamable_http_client(self.url, http_client=http_client) as streams:
                 read_stream, write_stream, _session_id = streams
                 async with ClientSession(read_stream, write_stream) as session:

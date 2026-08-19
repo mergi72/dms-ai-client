@@ -11,7 +11,12 @@ class BrokerError(RuntimeError):
 
 class BrokerClient:
     def __init__(self, base_url: str, timeout: float = 30) -> None:
-        self._client = httpx.Client(base_url=base_url, timeout=timeout, trust_env=False)
+        self._client = httpx.Client(
+            base_url=base_url,
+            timeout=timeout,
+            trust_env=False,
+            headers={"X-VFS-Component": "demi"},
+        )
 
     def resolve_secret(self, credential_id: str) -> str:
         try:

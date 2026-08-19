@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 
 from dms_ai_client.config import load_settings
 from dms_ai_client.mcp_connection import MCPConnection
+from dms_ai_client.logging_config import configure_logging
 from dms_ai_client.web import run_web
 
 
@@ -36,7 +38,13 @@ def main() -> None:
     if args.check:
         print(json.dumps(check_configuration(), ensure_ascii=False, indent=2))
         return
-    run_web(load_settings())
+    settings = load_settings()
+    log_dir = configure_logging(settings)
+    logging.getLogger("demi").info(
+        "demi_start service=demi host=%s port=%d log_dir=%s",
+        settings.ui_host, settings.ui_port, log_dir,
+    )
+    run_web(settings)
 
 
 if __name__ == "__main__":

@@ -23,5 +23,9 @@
     "maxAttachmentBytes": 10485760,
     "maxArchiveExtractedBytes": 5242880,
     "maxArchiveFiles": 200
+  },
+  "debug": {
+    "enable": true,
+    "path": "%APPDATA%\\DMS AI Client\\logs"
   }
 }

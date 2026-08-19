@@ -26,6 +26,13 @@ Voice transcription and learning defaults are stored independently in
 corrections live only in
 `%APPDATA%\DMS AI Client\config\voice.local.json`.
 
+The `debug` section of `client.json` controls VFS Debugger integration. Demi
+always writes UTF-8 operational events to `demi.log`; with `debug.enable` it
+also writes detailed transport events to `demi-debug.log` in the configured
+directory. Prompts, responses, credentials, attachments, transcriptions, and
+DMS document content are not written by Demi's application logger. OpenAI
+library DEBUG payload logging is disabled even when detailed logging is active.
+
 The OpenAI API key is never stored in this repository. The client configuration
 contains only `credentialId: openai/eli`; secret resolution will be delegated
 to Credential Broker and kept in memory.

@@ -35,6 +35,7 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
             "broker": {"url": "http://127.0.0.1:8776"},
             "mcp": {"url": "http://127.0.0.1:8781/mcp", "timeoutSeconds": 30},
             "ui": {"host": "127.0.0.1", "port": 8790, "maxAttachmentBytes": 10485760, "maxArchiveExtractedBytes": 5242880, "maxArchiveFiles": 200},
+            "debug": {"enable": True, "path": "%APPDATA%\\DMS AI Client\\logs"},
         },
     )
     _write_voice(
@@ -64,6 +65,8 @@ def test_load_settings_and_user_override(tmp_path: Path) -> None:
     assert settings.max_attachment_bytes == 10485760
     assert settings.max_output_tokens == 1000
     assert settings.mcp_url == "http://127.0.0.1:8781/mcp"
+    assert settings.debug_enabled is True
+    assert settings.debug_path.endswith("DMS AI Client\\logs")
 
 
 @pytest.mark.parametrize("value", [1.9, True, "1.9", "12x", None])
