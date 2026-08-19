@@ -10,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Mapping
 import zipfile
 
+from dms_ai_client import __version__
 from dms_ai_client.chat import ChatService
 from dms_ai_client.config import Settings
 from dms_ai_client.learning import forget_correction, learn_correction, learned_data
@@ -147,6 +148,10 @@ def _attachment(payload: Any, settings: Settings) -> dict[str, str] | None:
     return {"name": name, "mime_type": mime_type, "data_url": data_url}
 
 
+def _health_payload() -> dict[str, Any]:
+    return {"ok": True, "service": "demi", "version": __version__}
+
+
 def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
     service = ChatService(settings)
     transcription = TranscriptionService(settings)
@@ -157,6 +162,7 @@ def create_handler(settings: Settings) -> type[BaseHTTPRequestHandler]:
             self.send_response(status);self.send_header("Content-Type","application/json; charset=utf-8");self.send_header("Content-Length",str(len(body)));self.end_headers();self.wfile.write(body)
 
         def do_GET(self) -> None:  # noqa: N802
+            if self.path == "/health": self._json(200, _health_payload());return
             if self.path == "/": body=HTML.replace("__ASSISTANT_VOICE__", json.dumps(settings.assistant_voice, ensure_ascii=False)).replace("__MAX_ATTACHMENT_BYTES__", str(settings.max_attachment_bytes)).encode();content_type="text/html; charset=utf-8"
             elif self.path == "/voice.js": body=VOICE_JS.encode();content_type="text/javascript; charset=utf-8"
             elif self.path == "/api/transcription/learning":
