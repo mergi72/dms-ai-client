@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, AsyncIterator
 from urllib.parse import urlsplit
 
-import httpx
+import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
@@ -26,17 +26,17 @@ class MCPConnection:
     @asynccontextmanager
     async def session(self, correlation_id: str | None = None) -> AsyncIterator["MCPSession"]:
         self.check()
-        timeout = httpx.Timeout(self.timeout_seconds)
+        timeout = httpx2.Timeout(self.timeout_seconds)
         headers = {"X-VFS-Component": "demi"}
         if correlation_id:
             headers[CORRELATION_HEADER] = correlation_id
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             timeout=timeout,
             trust_env=False,
             headers=headers,
         ) as http_client:
             async with streamable_http_client(self.url, http_client=http_client) as streams:
-                read_stream, write_stream, _session_id = streams
+                read_stream, write_stream = streams
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
                     yield MCPSession(session)
@@ -53,7 +53,7 @@ class MCPSession:
                 "type": "function",
                 "name": tool.name,
                 "description": tool.description or "",
-                "parameters": tool.inputSchema,
+                "parameters": tool.input_schema,
                 "strict": False,
             }
             for tool in result.tools
@@ -62,7 +62,7 @@ class MCPSession:
     async def call(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         result = await self._session.call_tool(name, arguments)
         text = "".join(block.text for block in result.content if getattr(block, "type", None) == "text")
-        if result.isError:
+        if result.is_error:
             raise RuntimeError(text or f"MCP tool {name} failed.")
         payload = json.loads(text)
         if not isinstance(payload, dict):

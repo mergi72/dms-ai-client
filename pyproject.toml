@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dms-ai-client"
-version = "0.10.2"
+version = "0.11.0"
 description = "Local AI client for the read-only DMS MCP server."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,7 +12,8 @@ license = { text = "MIT" }
 authors = [{ name = "dms-ai-client team" }]
 dependencies = [
   "httpx>=0.28.1",
-  "mcp>=1.27,<2",
+  "httpx2>=2,<3",
+  "mcp>=2,<3",
   "openai[realtime]>=2,<3",
   "truststore>=0.10",
 ]
