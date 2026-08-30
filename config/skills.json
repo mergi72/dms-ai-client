@@ -29,8 +29,9 @@
     "search": {
       "enabled": true,
       "instructions": [
-        "Use search_items for name or content discovery and scope it to the current location when one exists.",
-        "Treat paths returned by search_items as authoritative and reuse them verbatim."
+        "Use search_items with search_mode=first_matches for interactive name discovery and scope it to the current location when one exists; use search_mode=exhaustive only when the user explicitly needs an exact total or complete globally ordered result.",
+        "Treat paths returned by search_items as authoritative and reuse them verbatim.",
+        "Do not repeat a successful search_items call in one turn: reason=result_limit is a final first_matches result, while complete=true with warnings=[] is a final exhaustive result."
       ]
     },
     "inspect": {
